@@ -353,7 +353,7 @@ async function callApi(action, payload) {
     // 1. 取得儲存在變數或 sessionStorage 中的驗證資訊
     // 建議在 handleAuth 成功時，就把這兩個值存好
     const name = currentUser; 
-    const phone = sessionStorage.getItem('adminPhone'); 
+    const phone = currentPhone; 
 
     // 2. 呼叫 API (務必帶上兩把鑰匙)
     const res = await callApi("getAdminFullData", { 
@@ -363,6 +363,7 @@ async function callApi(action, payload) {
 
     // 3. 因為 callApi 已經 return res.data 了，所以 res 就是我們要的陣列
     fullData = Array.isArray(res) ? res : [];
+    console.log("成功取得資料，數量：", fullData.length);
     
     // 4. 執行渲染
     renderUnifiedList();   
