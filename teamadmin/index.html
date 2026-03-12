@@ -692,7 +692,8 @@ function removeFromRoom(row) {
     await callApi("updateMultipleColumns", { 
       row: row, 
       p: payload, 
-      adminName: currentUser 
+      adminName: currentUser,
+      adminPhone: currentPhone
     });
 
     alert("✅ 資料更新成功！");
