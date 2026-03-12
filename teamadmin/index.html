@@ -692,8 +692,8 @@ function removeFromRoom(row) {
     await callApi("updateMultipleColumns", { 
       row: row, 
       p: payload, 
-      adminName: currentUser,
-      adminPhone: currentPhone
+      adminName: sessionStorage.getItem('adminName'), // 從存儲抓
+      adminPhone: sessionStorage.getItem('adminPhone') // 從存儲抓
     });
 
     alert("✅ 資料更新成功！");
