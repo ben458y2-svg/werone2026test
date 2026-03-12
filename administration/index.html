@@ -3,76 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SHINE 2026 行政管理系統</title>
+  <title>SHINE 2026 行政總管理系統</title>
   <style>
-    /* 這裡貼上你提供的 CSS (Neo-Brutalism 風格) */
+    /* --- 核心品牌色彩與字體 --- */
     :root {
       --shine-lime: #00ff7f; --shine-black: #1a1a1a;
       --shine-bg: #ffffff; --shine-light: #f4f7f5;
       --shine-gray: #d1d1d1; --shine-red: #ff4d4d;
     }
-    body { font-family: "Noto Sans TC", sans-serif; background: #f0f0f0; margin: 0; padding: 10px; }
-    .container {
-      max-width: 1200px; margin: 20px auto; background: var(--shine-bg);
-      padding: 30px; border: 3px solid var(--shine-black);
-      box-shadow: 10px 10px 0px var(--shine-black);
+    
+    body { 
+      font-family: "Inter", "Noto Sans TC", sans-serif; 
+      background-color: #f0f0f0; 
+      margin: 0; 
+      padding: 10px; 
     }
-    .form-section { border: 2px solid var(--shine-black); padding: 20px; background: var(--shine-light); margin-bottom: 25px; }
+
+    /* --- 容器與區塊樣式 --- */
+    .container {
+      max-width: 1300px; margin: 20px auto; background: var(--shine-bg);
+      padding: clamp(20px, 4vw, 40px); border: 3px solid var(--shine-black);
+      box-shadow: 12px 12px 0px var(--shine-black); box-sizing: border-box;
+      position: relative;
+    }
+
+    .form-section { 
+      border: 2px solid var(--shine-black); 
+      padding: 20px; 
+      background: var(--shine-light); 
+      margin-bottom: 30px; 
+    }
+
     .section-title { 
       display: inline-block; background: var(--shine-black); color: var(--shine-lime); 
-      padding: 5px 15px; font-weight: 900; margin-top: -35px; margin-bottom: 15px;
-      border: 2px solid var(--shine-black); box-shadow: 3px 3px 0px var(--shine-lime);
+      padding: 5px 20px; font-weight: 900; font-size: 1.1em; margin-bottom: 20px; 
+      margin-top: -35px; border: 2px solid var(--shine-black); 
+      box-shadow: 4px 4px 0px var(--shine-lime);
     }
-    .btn { padding: 10px 20px; font-weight: 900; border: 2px solid var(--shine-black); cursor: pointer; transition: 0.1s; }
+
+    /* --- 按鈕與輸入框 --- */
+    .btn { 
+      padding: 12px 25px; font-weight: 900; border: 2px solid var(--shine-black); 
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center; 
+      text-transform: uppercase; text-decoration: none; transition: 0.1s;
+      background: white; color: var(--shine-black);
+    }
+    
     .btn-next { background: var(--shine-black); color: var(--shine-lime); }
-    .btn-next:active { transform: translate(2px, 2px); box-shadow: none; }
-    input, select { border: 2px solid var(--shine-black); padding: 10px; width: 100%; box-sizing: border-box; }
-    label { font-weight: 900; background: var(--shine-lime); padding: 2px 8px; font-size: 14px; }
-    .item-card { background: white; border: 2px solid black; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .btn-next:hover { 
+      background: var(--shine-lime); color: var(--shine-black); 
+      box-shadow: 6px 6px 0px var(--shine-black); transform: translate(-3px, -3px); 
+    }
+
+    input, select { 
+      border: 2px solid var(--shine-black); padding: 12px; font-size: 16px; 
+      width: 100%; box-sizing: border-box; margin-top: 5px; 
+    }
+    
+    label { font-weight: 900; background: var(--shine-lime); padding: 2px 10px; display: inline-block; }
+
+    /* --- 列表卡片樣式 --- */
+    .grid-display-area {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      align-content: start;
+    }
+
+    .item-card {
+      background: var(--shine-bg);
+      border: 3px solid var(--shine-black);
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.1s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .item-card:hover {
+      transform: translate(-4px, -4px);
+      box-shadow: 8px 8px 0px var(--shine-black);
+    }
+
+    .card-header {
+      border-bottom: 2px solid var(--shine-black);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .status-tag { 
+      font-size: 11px; padding: 2px 6px; font-weight: 900;
+      background: var(--shine-black); color: var(--shine-lime); 
+    }
+
+    /* --- 工具類 --- */
     .hidden { display: none !important; }
-    .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 2000; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+    .form-group { margin-bottom: 15px; }
+    
+    .loading-mask {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255,255,255,0.8); z-index: 9999;
+      display: flex; align-items: center; justify-content: center; font-weight: 900;
+    }
   </style>
 </head>
 <body>
 
-  <div id="loading" class="loading-overlay hidden">處理中，請稍候...</div>
+  <div id="loading" class="loading-mask hidden">LOADING...</div>
 
-  <div id="auth-block" class="container" style="max-width:450px; margin-top: 100px;">
-    <div class="section-title">行政人員驗證</div>
-    <div class="form-group"><label>管理帳號</label><input type="text" id="u_name"></div>
-    <div class="form-group" style="margin-top:15px;"><label>登入密碼</label><input type="password" id="u_pass"></div>
-    <button class="btn btn-next" style="width:100%; margin-top:25px;" onclick="doLogin()">進入管理系統</button>
+  <div id="auth-block" class="container" style="max-width: 500px; margin-top: 80px;">
+    <div class="section-title">ADMIN AUTH</div>
+    <div class="form-section">
+      <div class="form-group"><label>ACCOUNT</label><input type="text" id="u_name"></div>
+      <div class="form-group"><label>PASSWORD</label><input type="password" id="u_pass"></div>
+      <button class="btn btn-next" style="width:100%; margin-top:10px;" onclick="doLogin()">START SESSION</button>
+    </div>
   </div>
 
   <div id="admin-dashboard" class="container hidden">
-    <div class="section-title">SHINE 總管理系統</div>
+    <div class="section-title">ADMIN DASHBOARD</div>
     
-    <div style="display:flex; gap:10px; margin-bottom:25px; flex-wrap: wrap;">
-      <button class="btn btn-next" id="tab-btn-edit" onclick="switchTab('edit')">資料編修</button>
-      <button class="btn" id="tab-btn-finance" onclick="switchTab('finance')">繳費登記</button>
+    <div style="display:flex; gap:10px; margin-bottom:30px; flex-wrap: wrap;">
+      <button class="btn btn-next" id="tab-edit" onclick="switchTab('edit')">資料編修</button>
+      <button class="btn" id="tab-finance" onclick="switchTab('finance')">繳費登記</button>
     </div>
 
     <div class="form-section">
-      <div class="section-title">名單快速檢索</div>
-      <input type="text" id="search-input" placeholder="🔍 輸入姓名、手機或教會關鍵字..." oninput="handleSearch()">
+      <div class="section-title">快速檢索</div>
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px;">
+        <div>
+          <label>關鍵字搜尋</label>
+          <input type="text" id="search-input" placeholder="搜尋姓氏、電話、教會..." oninput="handleSearch()">
+        </div>
+        <div>
+          <label>目前筆數</label>
+          <div id="stats-count" style="padding:12px; font-weight:900; border:2px solid black; background:white; margin-top:5px; text-align:center;">0</div>
+        </div>
+      </div>
     </div>
 
-    <div id="member-list-container"></div>
+    <div id="member-list-container" class="grid-display-area">
+      </div>
+  </div>
+
+  <div id="editModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto; padding: 20px 0;">
+    <div class="container" style="max-width: 900px; margin: auto;">
+      <button onclick="closeModal()" style="position: absolute; right: 20px; top: 20px; background: var(--shine-red); color: white; border: 2px solid black; padding: 5px 15px; cursor: pointer; font-weight:900;">CLOSE X</button>
+      <h2 style="text-align: center; font-weight: 900; margin-bottom:30px;">編輯詳細資料</h2>
+      <input type="hidden" id="edit-row-index">
+      
+      <div id="modal-fields-container">
+        </div>
+      
+      <div style="text-align: center; margin-top: 30px;">
+        <button class="btn btn-next" onclick="submitEdit()">儲存變更紀錄</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyU-0hGCUkmmu_YGTF80KVLVKZ-hwJUPgGRpz55XRrcH6z8YcVnvdNVDjfnQ9M3NvRL/exec"; // 部署後的網址
+    const GAS_URL = "你的_GAS_DEPLOY_URL"; 
     let fullData = [];
     let currentTab = 'edit';
 
-    // 統一呼叫 GAS 的函式
     async function api(payload) {
       document.getElementById('loading').classList.remove('hidden');
       try {
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-        const json = await res.json();
-        if (!json.success && json.msg) alert(json.msg);
-        return json;
+        return await res.json();
       } finally {
         document.getElementById('loading').classList.add('hidden');
       }
@@ -86,24 +189,23 @@
         sessionStorage.setItem('admin_token', res.token);
         document.getElementById('auth-block').classList.add('hidden');
         document.getElementById('admin-dashboard').classList.remove('hidden');
-        loadAllData();
-      }
+        fetchData();
+      } else { alert("驗證失敗"); }
     }
 
-    async function loadAllData() {
-      const token = sessionStorage.getItem('admin_token');
-      const res = await api({ action: 'fetchAllData', token: token });
+    async function fetchData() {
+      const res = await api({ action: 'fetchAllData', token: sessionStorage.getItem('admin_token') });
       if (res.success) {
         fullData = res.data;
-        renderList(fullData.slice(0, 50));
+        handleSearch();
       }
     }
 
     function switchTab(tab) {
       currentTab = tab;
-      document.querySelectorAll('.btn').forEach(b => b.classList.remove('btn-next'));
-      document.getElementById(`tab-btn-${tab}`).classList.add('btn-next');
-      handleSearch(); // 切換時保留搜尋結果
+      document.getElementById('tab-edit').className = 'btn' + (tab==='edit'?' btn-next':'');
+      document.getElementById('tab-finance').className = 'btn' + (tab==='finance'?' btn-next':'');
+      handleSearch();
     }
 
     function handleSearch() {
@@ -113,80 +215,44 @@
         (m.phone && m.phone.includes(key)) ||
         (m.church && m.church.toLowerCase().includes(key))
       );
-      renderList(filtered.slice(0, 50));
+      
+      const displayData = filtered.slice(0, 50);
+      document.getElementById('stats-count').innerText = `${displayData.length} / ${filtered.length}`;
+      renderList(displayData);
     }
 
     function renderList(data) {
       const container = document.getElementById('member-list-container');
       container.innerHTML = data.map(m => {
-        const balance = m.totalDue - m.paid - m.subsidy;
+        const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
         return `
-          <div class="item-card">
-            <div>
+          <div class="item-card" onclick="openAction(${m.row})">
+            <div class="card-header">
               <strong style="font-size:1.1em;">${m.name}</strong>
-              <span class="status-tag" style="padding:2px 5px; background:#eee; font-size:12px; margin-left:5px; border:1px solid black;">${m.role}</span>
-              <div style="font-size:13px; color:#666; margin-top:5px;">${m.church} | ${m.phone}</div>
-              ${currentTab === 'finance' ? `<div style="margin-top:5px; font-weight:900; color:${balance <= 0 ? 'green' : 'red'}">
-                ${balance <= 0 ? '● 已繳清' : '○ 欠費: ' + balance}
-              </div>` : ''}
+              <span class="status-tag">${m.role}</span>
             </div>
-            <button class="btn btn-next" onclick="openAction(${m.row})">${currentTab === 'edit' ? '編修個資' : '登記繳費'}</button>
+            <div style="font-size:14px; font-weight:700;">
+              <div>${m.church || '無教會資訊'}</div>
+              <div style="margin-top:5px; color:#666;">${m.phone}</div>
+              ${currentTab === 'finance' ? `
+                <div style="margin-top:10px; border-top:1px dashed black; padding-top:10px; color:${balance <= 0 ? 'green' : 'var(--shine-red)'};">
+                  ${balance <= 0 ? '● 已結清' : '○ 欠費：' + balance}
+                </div>
+              ` : ''}
+            </div>
           </div>
         `;
       }).join('');
     }
 
-    /**
- * 開啟個資編修 Modal
- */
-function openAction(rowId) {
-  const m = fullData.find(item => item.row === rowId);
-  if (!m) return;
-
-  if (currentTab === 'edit') {
-    // 填入個資編修欄位
-    document.getElementById('edit-row-index').value = m.row;
-    document.getElementById('m-name').value = m.name || "";
-    document.getElementById('m-gender').value = m.gender || "男";
-    document.getElementById('m-birthday').value = m.birthday || "";
-    document.getElementById('m-phone').value = m.phone || "";
-    document.getElementById('m-email').value = m.email || "";
-    document.getElementById('m-role').value = m.role || "";
-    document.getElementById('m-school').value = m.school || "";
-    document.getElementById('m-grade').value = m.grade || "";
-    document.getElementById('m-church').value = m.church || "";
-    document.getElementById('m-isChristian').value = m.isChristian || "是";
-    document.getElementById('m-isBaptized').value = m.isBaptized || "是";
-    document.getElementById('m-iceName').value = m.iceName || "";
-    document.getElementById('m-iceRel').value = m.iceRel || "";
-    document.getElementById('m-icePhone').value = m.icePhone || "";
-    document.getElementById('m-isAttended').value = m.isAttended || "否";
-    document.getElementById('m-dietary').value = m.dietary || "葷食";
-    document.getElementById('m-medical').value = m.medical || "";
+    function closeModal() { document.getElementById('editModal').classList.add('hidden'); }
     
-    document.getElementById('editModal').classList.remove('hidden');
-  } else {
-    // 填入繳費登記 Modal (如果你有設計的話)
-    openFinanceModal(m);
-  }
-}
-
-/**
- * 財務專用 Modal 處理
- */
-function openFinanceModal(m) {
-  const fModal = document.getElementById('financeModal'); // 假設你有這個 Modal
-  if(!fModal) {
-    alert(`【財務登記】\n姓名：${m.name}\n應繳：${m.totalDue}\n已繳：${m.paid}`);
-    return;
-  }
-  document.getElementById('f-row-index').value = m.row;
-  document.getElementById('f-paid').value = m.paid || 0;
-  document.getElementById('f-subsidy').value = m.subsidy || 0;
-  document.getElementById('f-method').value = m.method || "";
-  document.getElementById('f-note').value = m.note || "";
-  fModal.classList.remove('hidden');
-}
+    function openAction(rowId) {
+       // 根據 Tab 決定行為... 
+       // 目前先測試開啟個資編輯
+       document.getElementById('editModal').classList.remove('hidden');
+       console.log("正在處理行數：", rowId);
+    }
   </script>
 </body>
 </html>
