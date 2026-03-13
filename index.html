@@ -729,7 +729,7 @@ function handleP1Next() {
     // 4. 根據後端回傳內容決定下一步
     if (result.status === 'success') {
       // 只有成功了，才隱藏按鈕、顯示成功視窗
-      document.getElementById('submitBtn').classList.add('hidden');
+      document.getElementById('finalSubmitBtn').classList.add('hidden');
       const modal = document.getElementById('successModal');
       modal.classList.remove('hidden');
       modal.style.display = 'flex';
