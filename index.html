@@ -835,27 +835,59 @@ function handleP1Next() {
   
   function addGroupRow(data={}) {
   const tr = document.createElement('tr'); tr.className = 'member-row';
+  // 1. 先建立結構，但把 value 留空（或是放預設值）
   tr.innerHTML = `
-    <td class="sticky-col"><input type="text" name="name" value="${data.姓名||''}"></td>
-    <td><select name="gender"><option value="">請選擇</option><option ${data.性別==='男'?'selected':''}>男</option><option ${data.性別==='女'?'selected':''}>女</option></select></td>
-    <td><input type="date" name="birthday" value="${formatDate(data.生日)}"></td>
-    
-    <td><input type="tel" name="phone" class="tel-auto" value="${data.手機||''}"></td>
-    <td><input type="email" name="email" value="${data.電子郵件||''}"></td>
-    <td><select name="role"><option value="">請選擇</option><option ${data.報名身分==='國中'?'selected':''}>國中</option><option ${data.報名身分==='高中職'?'selected':''}>高中職</option><option ${data.報名身分==='大專'?'selected':''}>大專</option><option ${data.報名身分==='社青'?'selected':''}>社青</option><option ${data.報名身分==='傳道'?'selected':''}>傳道</option><option ${data.報名身分==='牧師'?'selected':''}>牧師</option></select></td>
-    <td><input type="text" name="school" value="${data.就讀學校||''}"></td>
-    <td><input type="text" name="grade" value="${data.升上年級||''}"></td>
-    <td><input type="text" name="church" value="${data.所屬教會||''}"></td>
-    <td><select name="isChristian"><option value="">請選擇</option><option ${data.是否為基督徒==='是'?'selected':''}>是</option><option ${data.是否為基督徒==='否'?'selected':''}>否</option></select></td>
-    <td><select name="isBaptized"><option value="">請選擇</option><option ${data.是否已受洗==='是'?'selected':''}>是</option><option ${data.是否已受洗==='否'?'selected':''}>否</option></select></td>
-    <td><input type="text" name="iceName" value="${data.緊急聯絡人||''}"></td>
-    <td><input type="text" name="iceRel" value="${data.緊急連絡人關係||''}"></td>
-    <td><input type="tel" name="icePhone" class="tel-auto" value="${data.緊急聯絡人電話||''}"></td>
-    <td><select name="isAttended"><option value="">請選擇</option><option ${data.曾參加SHINE營會==='是'?'selected':''}>是</option><option ${data.曾參加SHINE營會==='否'?'selected':''}>否</option></select></td>
-    <td><select name="dietary"><option value="">請選擇</option><option ${data.飲食需求==='葷食'?'selected':''}>葷食</option><option ${data.飲食需求==='蛋奶素'?'selected':''}>蛋奶素</option><option ${data.飲食需求==='純素'?'selected':''}>純素</option></select></td>
-    <td><input type="text" name="medical" value="${data.特殊狀況與注意事項||'無'}"></td>
+    <td class="sticky-col"><input type="text" name="name"></td>
+    <td><select name="gender"><option value="">請選擇</option><option value="男">男</option><option value="女">女</option></select></td>
+    <td><input type="date" name="birthday"></td>
+    <td><input type="tel" name="phone" class="tel-auto"></td>
+    <td><input type="email" name="email"></td>
+    <td>
+      <select name="role">
+        <option value="">請選擇</option>
+        <option value="國中">國中</option><option value="高中職">高中職</option>
+        <option value="大專">大專</option><option value="社青">社青</option>
+        <option value="傳道">傳道</option><option value="牧師">牧師</option>
+      </select>
+    </td>
+    <td><input type="text" name="school"></td>
+    <td><input type="text" name="grade"></td>
+    <td><input type="text" name="church"></td>
+    <td><select name="isChristian"><option value="">請選擇</option><option value="是">是</option><option value="否">否</option></select></td>
+    <td><select name="isBaptized"><option value="">請選擇</option><option value="是">是</option><option value="否">否</option></select></td>
+    <td><input type="text" name="iceName"></td>
+    <td><input type="text" name="iceRel"></td>
+    <td><input type="tel" name="icePhone" class="tel-auto"></td>
+    <td><select name="isAttended"><option value="">請選擇</option><option value="是">是</option><option value="否">否</option></select></td>
+    <td><select name="dietary"><option value="">請選擇</option><option value="葷食">葷食</option><option value="蛋奶素">蛋奶素</option><option value="純素">純素</option></select></td>
+    <td><input type="text" name="medical"></td>
     <td><button type="button" onclick="this.closest('tr').remove()" style="color:red; border:none; background:none; cursor:pointer; font-weight:900;">✕</button></td>
   `;
+
+  // 2. 使用安全賦值 (這部分會自動過濾掉惡意代碼)
+  const setVal = (selector, value) => {
+    const el = tr.querySelector(selector);
+    if (el) el.value = value || '';
+  };
+
+  setVal('input[name="name"]', data.姓名);
+  setVal('select[name="gender"]', data.性別);
+  setVal('input[name="birthday"]', formatDate(data.生日));
+  setVal('input[name="phone"]', data.手機);
+  setVal('input[name="email"]', data.電子郵件);
+  setVal('select[name="role"]', data.報名身分);
+  setVal('input[name="school"]', data.就讀學校);
+  setVal('input[name="grade"]', data.升上年級);
+  setVal('input[name="church"]', data.所屬教會);
+  setVal('select[name="isChristian"]', data.是否為基督徒);
+  setVal('select[name="isBaptized"]', data.是否已受洗);
+  setVal('input[name="iceName"]', data.緊急聯絡人);
+  setVal('input[name="iceRel"]', data.緊急連絡人關係);
+  setVal('input[name="icePhone"]', data.緊急聯絡人電話);
+  setVal('select[name="isAttended"]', data.曾參加SHINE營會);
+  setVal('select[name="dietary"]', data.飲食需求);
+  setVal('input[name="medical"]', data.特殊狀況與注意事項 || '無');
+
   document.getElementById('memberBody').appendChild(tr);
 }
   function formatDate(v) { if(!v) return ''; if(typeof v === 'number') return new Date((v-25569)*86400*1000).toISOString().split('T')[0]; return v; }
