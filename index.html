@@ -730,7 +730,6 @@ function handleP1Next() {
     if (result.status === 'success') {
       // 只有成功了，才隱藏按鈕、顯示成功視窗
       document.getElementById('finalSubmitBtn').classList.add('hidden');
-      const modal = document.getElementById('successModal');
       modal.classList.remove('hidden');
       modal.style.display = 'flex';
     } else {
@@ -742,6 +741,9 @@ function handleP1Next() {
     // 統一在這裡捕捉所有錯誤（網路錯誤或後端錯誤）
     console.error('發生錯誤：', error);
     alert('抱歉，報名發生問題：' + error.message);
+    btn.disabled = false;
+    btn.innerText = '確認無誤，送出報名';
+    
   }
 }
 
