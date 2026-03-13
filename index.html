@@ -2,7 +2,8 @@
 <html>
 <head>
   <base target="_top">
-  <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8" content="WE R ONE 2026報名系統">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" content="WE R ONE 2026報名系統">
   <title>WE R ONE 2026 營會報名系統</title>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <style>
@@ -378,34 +379,30 @@ code {
 
 <script>
   let memberData = [];
-  const PRICE = 3500, DISCOUNT = 400;
 
-  document.addEventListener('input', e => {
-  if (!window.isTelListenerAttached) {
-  document.addEventListener('input', e => {
-    const target = e.target;
-    if (target.classList.contains('tel-auto')) {
-      
-      // 1. 取得純數字，並限制在 10 碼
-      let v = target.value.replace(/\D/g, '').slice(0, 10);
-      
-      // 2. 格式化：只要超過 4 碼就插一個橫槓
-      let formatted = v;
-      if (v.length > 4) {
-        formatted = v.slice(0, 4) + '-' + v.slice(4);
-      }
-      
-      // 3. 關鍵修正：判斷如果值沒變，就不觸發更新
-      // 同時防止多個監聽器互相干擾
-      if (target.value !== formatted) {
-        target.value = formatted;
-      }
+  // 全域唯一的輸入監聽器：只在頁面載入時註冊這一次
+document.addEventListener('input', e => {
+  const target = e.target;
+
+  // 1. 處理手機格式化 (tel-auto)
+  if (target.classList.contains('tel-auto')) {
+    // 取得純數字，並限制在 10 碼
+    let v = target.value.replace(/\D/g, '').slice(0, 10);
+    
+    // 格式化邏輯：只要超過 4 碼就插一個橫槓 (09xx-xxxxxx)
+    let formatted = v;
+    if (v.length > 4) {
+      formatted = v.slice(0, 4) + '-' + v.slice(4);
     }
-    target.classList.remove('invalid');
-  });
-  window.isTelListenerAttached = true; // 標記已掛載
-}
-  e.target.classList.remove('invalid');
+    
+    // 只有當「目前畫面上的值」與「格式化後的值」不同時才更新，避免游標亂跳
+    if (target.value !== formatted) {
+      target.value = formatted;
+    }
+  }
+
+  // 2. 統一移除無效標記 (不論是不是手機欄位，只要有輸入就移除紅框)
+  target.classList.remove('invalid');
 });
 
   // 開啟注意事項視窗
@@ -712,49 +709,39 @@ function handleP1Next() {
   };
 
   try {
-    await fetch(SCRIPT_URL, {
-  method: 'POST',
-  // 1. 移除 no-cors，改回 cors（預設即為 cors）
-  mode: 'cors', 
-  cache: 'no-cache',
-  // 2. 關鍵：改用 text/plain 來避開 preflight 預檢請求
-  headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-  // 3. 確保讓瀏覽器跟隨 GAS 的 302 重定向
-  redirect: 'follow', 
-  body: JSON.stringify(payload)
-})
-.then(response => {
-  if (!response.ok) throw new Error('網路回應不正確');
-  return response.json(); // 現在你可以正常讀取後端回傳的 JSON 了！
-})
-.then(result => {
-  console.log('報名結果：', result);
-  // 在這裡處理成功邏輯，例如導向成功頁面
-})
-.catch(error => {
-  console.error('發生錯誤：', error);
-  // 在這裡處理失敗邏輯，告知使用者報名失敗
-});
+    // 1. 開始發送請求
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'cors', 
+      cache: 'no-cache',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+      redirect: 'follow', 
+      body: JSON.stringify(payload)
+    });
 
-    // --- 成功後的處理邏輯 ---
-    
-    // 1. 隱藏送出按鈕
-    btn.classList.add('hidden');
-    
-    // 2. 顯示成功視窗
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex'; 
-    
-    // 3. (選填) 如果你有設置「關閉視窗」按鈕，確保它的功能正常
-    // 例如：document.getElementById('closeModalBtn').onclick = () => { location.reload(); };
+    // 2. 檢查網路狀態
+    if (!response.ok) throw new Error('網路回應不正確');
 
-    console.log("資料已成功送出至後端");
+    // 3. 等待解析 JSON 結果
+    const result = await response.json();
+    console.log('報名結果：', result);
+
+    // 4. 根據後端回傳內容決定下一步
+    if (result.status === 'success') {
+      // 只有成功了，才隱藏按鈕、顯示成功視窗
+      document.getElementById('submitBtn').classList.add('hidden');
+      const modal = document.getElementById('successModal');
+      modal.classList.remove('hidden');
+      modal.style.display = 'flex';
+    } else {
+      // 如果後端回傳失敗（例如名額已滿）
+      throw new Error(result.message || '報名失敗');
+    }
 
   } catch (error) {
-    console.error("Submission Error:", error);
-    alert("抱歉，送出過程發生錯誤，請截圖並聯繫主辦單位。");
-    btn.disabled = false;
-    btn.innerText = "確認無誤，送出報名";
+    // 統一在這裡捕捉所有錯誤（網路錯誤或後端錯誤）
+    console.error('發生錯誤：', error);
+    alert('抱歉，報名發生問題：' + error.message);
   }
 }
 
@@ -898,7 +885,7 @@ function handleP1Next() {
       document.getElementById('memberBody').innerHTML = ''; data.forEach(d => addGroupRow(d));
     }; r.readAsBinaryString(i.files[0]);
   }
-  window.onload = toggleMode;
+  window.addEventListener('load', toggleMode);
   
 </script>
 </body>
