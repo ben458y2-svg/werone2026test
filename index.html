@@ -699,7 +699,7 @@ function handleP1Next() {
   btn.disabled = true; 
   btn.innerText = "資料送出中...";
 
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAn9VdZkeWLXwP_Pbza1j5HJLw_2pjRiFv4iI-xnCJi-zNcBCij5d7NJ1xN79pa6t9/exec"; // 記得替換！
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyvQd8zp21CMBdk43l4_LOQjFSgimGPiejINj4sgou1YBmsqRwMBFPkr4Oy2G-45adW/exec"; // 記得替換！
 
   const payload = {
     mode: document.getElementById('modeSelect').value,
@@ -712,14 +712,29 @@ function handleP1Next() {
   };
 
   try {
-    // 執行送出
     await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors', 
-      cache: 'no-cache',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+  method: 'POST',
+  // 1. 移除 no-cors，改回 cors（預設即為 cors）
+  mode: 'cors', 
+  cache: 'no-cache',
+  // 2. 關鍵：改用 text/plain 來避開 preflight 預檢請求
+  headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+  // 3. 確保讓瀏覽器跟隨 GAS 的 302 重定向
+  redirect: 'follow', 
+  body: JSON.stringify(payload)
+})
+.then(response => {
+  if (!response.ok) throw new Error('網路回應不正確');
+  return response.json(); // 現在你可以正常讀取後端回傳的 JSON 了！
+})
+.then(result => {
+  console.log('報名結果：', result);
+  // 在這裡處理成功邏輯，例如導向成功頁面
+})
+.catch(error => {
+  console.error('發生錯誤：', error);
+  // 在這裡處理失敗邏輯，告知使用者報名失敗
+});
 
     // --- 成功後的處理邏輯 ---
     
