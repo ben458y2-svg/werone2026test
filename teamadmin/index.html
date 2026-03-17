@@ -453,11 +453,15 @@ function renderDormInterface() {
   
   // 1. 資料分類
   fullData.forEach(m => {
-    if (m.room && m.room.trim() !== "") {
-      if (!rooms[m.room]) rooms[m.room] = [];
-      rooms[m.room].push(m);
-    } else {
-      unassigned.push(m);
+    // 💡 取得最即時的房號 (優先看 changedRows)
+  const pending = changedRows.get(m.row);
+  const r = (pending && pending.room !== undefined) ? pending.room : m.room;
+
+  if (r && r.trim() !== "") {
+    if (!rooms[r]) rooms[r] = [];
+    rooms[r].push(m);
+  } else {
+    unassigned.push(m);
     }
   });
 
@@ -485,30 +489,39 @@ function renderDormInterface() {
   });
   poolList.innerHTML = poolHtml;
 
-  // 3. 渲染右側房間列表 (採用與編組一致的 item-card 風格)
-  let roomHtml = "";
-  const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms])).sort();
+ // 3. 渲染右側房間列表 (改造後的版本)
+let roomHtml = "";
+const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms])).sort();
   
   allRoomNos.forEach(rNo => {
-    const members = rooms[rNo] || [];
-    const isSelected = (activeRoom === rNo);
+  const members = rooms[rNo] || [];
+  const isSelected = (activeRoom === rNo);
     
     // 判定房間性別色彩 (男/女/空)
     let borderTopColor = "var(--shine-gray)";
-    let genderLabel = "未定";
-    if (members.length > 0) {
-      borderTopColor = (members[0].gender === '男' ? '#4da6ff' : '#ff85a2');
-      genderLabel = members[0].gender;
-    }
+  let genderLabel = "未定";
+  if (members.length > 0) {
+    borderTopColor = (members[0].gender === '男' ? '#4da6ff' : '#ff85a2');
+    genderLabel = members[0].gender;
+  }
 
     roomHtml += `
-      <div class="item-card ${isSelected ? 'active-room' : ''}" onclick="setActiveRoom('${rNo}')" 
-           style="border-top: 10px solid ${borderTopColor};">
-        
-        <div class="card-header">
-          <strong style="font-size:1.3em; font-weight:900;">${rNo} 房</strong>
-          <span class="status-tag">${members.length}/4</span>
-        </div>
+      roomHtml += `
+    <div class="item-card ${isSelected ? 'active-room' : ''}" onclick="setActiveRoom('${rNo}')" 
+         style="border-top: 10px solid ${borderTopColor}; position: relative;">
+      
+      <div class="card-header">
+        <input type="text" 
+               class="room-name-input" 
+               value="${rNo}" 
+               onchange="updateRoomName('${rNo}', this.value)"
+               onclick="event.stopPropagation()"
+               style="font-size:1.2em; font-weight:900; border:1px solid transparent; background:transparent; width:70%;"
+               onfocus="this.style.border='1px solid #ccc'; this.style.background='#fff'"
+               onblur="this.style.border='1px solid transparent'; this.style.background='transparent'"
+        >
+        <span class="status-tag">${members.length}/4</span>
+      </div>
 
         <div style="flex-grow:1; min-height:60px;">
           ${members.length > 0 ? 
@@ -532,6 +545,50 @@ function renderDormInterface() {
   roomContainer.innerHTML = roomHtml;
   }
 
+  function updateRoomName(oldName, newName) {
+  newName = newName.trim();
+  if (!newName || oldName === newName) return;
+
+  // 1. 檢查新名稱是否已存在
+  const isExists = fullData.some(m => m.room === newName) || virtualRooms.includes(newName);
+  if (isExists) {
+    alert("❌ 房號已存在！");
+    renderDormInterface();
+    return;
+  }
+
+  // 2. 更新虛擬房間列表
+  const vIdx = virtualRooms.indexOf(oldName);
+  if (vIdx !== -1) virtualRooms[vIdx] = newName;
+
+  // 3. 💡 核心：將所有原本在 oldName 房間的人，在暫存中改為新房間
+  // 這樣儲存時，後端才會收到正確的新房號
+  fullData.forEach(m => {
+    // 檢查原始資料或暫存資料是否屬於該房間
+    const pending = changedRows.get(m.row);
+    const currentRoom = (pending && pending.room !== undefined) ? pending.room : m.room;
+
+    if (currentRoom === oldName) {
+      changedRows.set(m.row, {
+        ...(pending || {}),
+        row: m.row,
+        room: newName,
+        _type: 'dorm'
+      });
+    }
+  });
+
+  // 4. 更新當前選取的房間 ID，避免選取框消失
+  if (activeRoom === oldName) activeRoom = newName;
+
+  isDirty = true;
+  if (document.getElementById('dorm-save-bar')) {
+    document.getElementById('dorm-save-bar').classList.remove('hidden');
+  }
+  
+  renderDormInterface();
+}
+  
   function setActiveRoom(rNo) {
     activeRoom = rNo;
     const roomMembers = fullData.filter(m => m.room === rNo);
@@ -552,6 +609,39 @@ function renderDormInterface() {
     setActiveRoom(rNo);
   }
 
+function createNewRoom() {
+  // 自動產生一個不重複的預設房號
+  let i = 1;
+  let newName = `新寢室${i}`;
+  while (fullData.some(m => m.room === newName) || virtualRooms.includes(newName)) {
+    i++;
+    newName = `新寢室${i}`;
+  }
+
+  // 插入到列表最前方
+  virtualRooms.unshift(newName);
+  
+  // 自動選取新房間
+  setActiveRoom(newName);
+  
+  // 提示：可以搭配 setTimeout 讓該 input 自動 focus，方便直接改名
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.room-name-input');
+    if (inputs.length > 0) {
+      inputs[0].focus();
+      inputs[0].select();
+    }
+  }, 100);
+}
+
+// 輔助功能：刪除虛擬空房
+function deleteVirtualRoom(rNo) {
+  if (!confirm(`確定要刪除 ${rNo} 嗎？`)) return;
+  virtualRooms = virtualRooms.filter(r => r !== rNo);
+  if (activeRoom === rNo) activeRoom = "";
+  renderDormInterface();
+}
+  
   // 2. 修改入住函數：移除 google.script.run
 function clickToAssign(row, gender) {
   if (!activeRoom) {
@@ -590,12 +680,21 @@ function clickToAssign(row, gender) {
 function removeFromRoom(row) {
   const m = fullData.find(x => x.row == row);
   if (!m) return;
-  m.room = "";
-// 修正點：標記該行號的 room 為空字串
-  changedRows.set(row, { row: row, room: "" });
+  // 💡 關鍵修正：先取得該 row 已經存在的變更
+  const pending = changedRows.get(row);
+
+  // 使用 ...pending 展開舊變更，再覆蓋新的 room 值
+  changedRows.set(row, { 
+    ...(pending || {}), // 保留此人已有的其他變動 (例如職稱、組別)
+    row: row, 
+    room: "",            // 執行「退房」動作
+    _type: 'dorm'        // 標記這是寢室變動
+  });
+
   isDirty = true;
-  document.getElementById('dorm-save-bar').classList.remove('hidden');
-  renderDormInterface();
+  
+  const saveBar = document.getElementById('dorm-save-bar');
+  if (saveBar) saveBar.classList.remove('hidden');
 }
 
 
