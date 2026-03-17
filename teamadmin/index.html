@@ -969,54 +969,63 @@ function renderRoleInterface() {
 }).join('');
 }
 
-function toggleRole(row, targetRole) {
-  const m = fullData.find(item => item.row === row);
+function toggleRole(rowId, targetRole) {
+  const m = fullData.find(item => item.row === rowId);
   if (!m) return;
 
-  // 1. 如果點擊的是目前的身分，代表要「取消」，直接變回學員
-  if (m.teamRole === targetRole) {
-    m.teamRole = "";
+  // 💡 修正 1：取得「最即時」的狀態（優先看暫存區）
+  const pending = changedRows.get(rowId);
+  const currentRole = (pending && pending.teamRole !== undefined) ? pending.teamRole : (m.teamRole || "");
+
+  let newRole = "";
+
+  // 1. 如果點擊的是目前的身分，代表要「取消」
+  if (currentRole === targetRole) {
+    newRole = ""; 
   } 
-  // 2. 如果是要切換到「正隊輔」或「副隊輔」，先檢查名額
+  // 2. 切換身分
   else if (targetRole !== "") {
-    // 找出同組的所有成員
+    // 💡 修正 3：名額檢查也要看「暫存區」才能防重複
     const groupMembers = fullData.filter(item => item.group === m.group);
     
+    // 計算該組目前真實的職稱人數（結合原始資料與暫存變更）
+    const getRealRoleCount = (roleName) => {
+      return groupMembers.filter(member => {
+        const p = changedRows.get(member.row);
+        const r = (p && p.teamRole !== undefined) ? p.teamRole : member.teamRole;
+        return r === roleName;
+      }).length;
+    };
+
     if (targetRole === "正隊輔") {
-      const chiefCount = groupMembers.filter(item => item.teamRole === "正隊輔").length;
-      if (chiefCount >= 1) {
+      if (getRealRoleCount("正隊輔") >= 1) {
         alert(`⚠️ 【${m.group}】已經有一位正隊輔了！\n請先將原正隊輔設為學員。`);
         return;
       }
     } 
     else if (targetRole === "副隊輔") {
-      const assistantCount = groupMembers.filter(item => item.teamRole === "副隊輔").length;
-      if (assistantCount >= 2) {
+      if (getRealRoleCount("副隊輔") >= 2) {
         alert(`⚠️ 【${m.group}】副隊輔已達 2 位上限！`);
         return;
       }
     }
-    m.teamRole = targetRole;
-  } 
-  // 3. 如果是點擊「學員」按鈕
-  else {
-    m.teamRole = "";
+    newRole = targetRole;
   }
 
-  // 標記變動並更新介面
-  // 修正點：將 .add(row) 改為 .set(...)
-  // 這樣儲存時，後端 batchUpdateDormAndGroups 才能抓到 teamRole
-  changedRows.set(row, { 
-    row: row, 
+  // 💡 修正 2：使用 Spread Operator 合併資料，防止分房資訊遺失
+  changedRows.set(rowId, { 
+    ...(changedRows.get(rowId) || {}), // 保留所有舊變更 (例如房號 room)
+    row: rowId, 
     group: m.group, 
-    teamRole: m.teamRole 
+    teamRole: newRole,
+    _type: 'role' // 標記這是一筆職稱變更
   });
-  isDirty = true;
 
+  isDirty = true;
   const saveBar = document.getElementById('role-save-bar');
   if (saveBar) saveBar.classList.remove('hidden');
 
-  renderRoleInterface(); // 重新渲染，顏色會隨之改變
+  renderRoleInterface(); 
 }
 
 // 建議在 HTML 調用時改為：onclick="saveBatchData(this)"
@@ -1024,7 +1033,7 @@ async function saveBatchData(btnElement) {
   if (changedRows.size === 0) return alert("尚未偵測到變動。");
 
   // 1. 判定本次變動是否涉及「組別相關」
-  const hasGroupChanges = fullData.some(m => changedRows.has(m.row) && m.group !== undefined);
+  const hasGroupChanges = updates.some(u => u._type === 'group' || u.group !== undefined);
 
   // 2. 只有在涉及組別變動時，執行重複組名檢查
   if (hasGroupChanges) {
@@ -1061,21 +1070,17 @@ const updates = Array.from(changedRows.values());
 // 診斷：看看準備送出的資料長什麼樣子
 console.log("準備送出的更新資料:", updates);
 
-if (updates.length === 0) {
-    alert("沒有偵測到任何變更");
-    return;
-}
-
   try {
+    const adminName = sessionStorage.getItem('adminName') || currentUser;
+    
     // 1. 呼叫 API (後端這時會寫入資料)
     const res = await callApi("batchUpdateDormAndGroups", { 
       updates: updates, 
-      adminName: currentUser 
+      adminName: adminName 
     });
 
     // 💡 關鍵：不要再去判斷 if(res.success)，因為 callApi 沒報錯就代表成功
     console.log("儲存成功，後端回傳：", res);
-
     alert("✅ 儲存成功！");
     
     // 2. 清除變更狀態
