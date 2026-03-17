@@ -508,20 +508,21 @@ const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms]))
     roomHtml += `
       roomHtml += `
     <div class="item-card ${isSelected ? 'active-room' : ''}" onclick="setActiveRoom('${rNo}')" 
-         style="border-top: 10px solid ${borderTopColor}; position: relative;">
-      
-      <div class="card-header">
-        <input type="text" 
-               class="room-name-input" 
-               value="${rNo}" 
-               onchange="updateRoomName('${rNo}', this.value)"
-               onclick="event.stopPropagation()"
-               style="font-size:1.2em; font-weight:900; border:1px solid transparent; background:transparent; width:70%;"
-               onfocus="this.style.border='1px solid #ccc'; this.style.background='#fff'"
-               onblur="this.style.border='1px solid transparent'; this.style.background='transparent'"
-        >
-        <span class="status-tag">${members.length}/4</span>
-      </div>
+       style="border-top: 10px solid ${borderTopColor}; position: relative;">
+    
+    <div class="card-header">
+      <input type="text" 
+             class="room-name-input" 
+             value="${rNo}" 
+             onchange="updateRoomName('${rNo}', this.value)"
+             onclick="event.stopPropagation()"
+             onkeydown="if(event.key==='Enter') this.blur()" 
+             style="font-size:1.2em; font-weight:900; border:1px solid transparent; background:transparent; width:70%;"
+             onfocus="this.style.border='1px solid #ccc'; this.style.background='#fff'"
+             onblur="this.style.border='1px solid transparent'; this.style.background='transparent'"
+      >
+      <span class="status-tag">${members.length}/4</span>
+    </div>
 
         <div style="flex-grow:1; min-height:60px;">
           ${members.length > 0 ? 
@@ -549,11 +550,16 @@ const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms]))
   newName = newName.trim();
   if (!newName || oldName === newName) return;
 
-  // 1. 檢查新名稱是否已存在
-  const isExists = fullData.some(m => m.room === newName) || virtualRooms.includes(newName);
-  if (isExists) {
-    alert("❌ 房號已存在！");
-    renderDormInterface();
+  // 💡 核心邏輯：直接抓取畫面上所有 input 的值來比對
+  const allCurrentInputs = Array.from(document.querySelectorAll('.room-name-input'));
+  const otherNames = allCurrentInputs
+    .map(input => input.value.trim())
+    .filter(name => name !== oldName); // 排除自己目前的名稱
+
+  // 1. 檢查是否與畫面上其他房間重複
+  if (otherNames.includes(newName)) {
+    alert(`❌ 房號「${newName}」在目前清單中已存在！`);
+    renderDormInterface(); // 刷回原名
     return;
   }
 
@@ -561,13 +567,10 @@ const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms]))
   const vIdx = virtualRooms.indexOf(oldName);
   if (vIdx !== -1) virtualRooms[vIdx] = newName;
 
-  // 3. 💡 核心：將所有原本在 oldName 房間的人，在暫存中改為新房間
-  // 這樣儲存時，後端才會收到正確的新房號
+  // 3. 同步更新暫存區 (讓裡面的人跟著搬家)
   fullData.forEach(m => {
-    // 檢查原始資料或暫存資料是否屬於該房間
     const pending = changedRows.get(m.row);
     const currentRoom = (pending && pending.room !== undefined) ? pending.room : m.room;
-
     if (currentRoom === oldName) {
       changedRows.set(m.row, {
         ...(pending || {}),
@@ -597,34 +600,23 @@ const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms]))
     renderDormInterface();
   }
 
-  function createNewRoom() {
-    const rNo = prompt("請輸入新房號 (如 A101):");
-    if (!rNo) return;
-    if (fullData.some(m => m.room === rNo) || virtualRooms.includes(rNo)) {
-      alert("房號已存在");
-      setActiveRoom(rNo);
-      return;
-    }
-    virtualRooms.push(rNo);
-    setActiveRoom(rNo);
-  }
-
 function createNewRoom() {
-  // 自動產生一個不重複的預設房號
+  // 取得目前畫面上所有的房號
+  const existingNames = Array.from(document.querySelectorAll('.room-name-input'))
+                             .map(i => i.value.trim());
+
   let i = 1;
   let newName = `新寢室${i}`;
-  while (fullData.some(m => m.room === newName) || virtualRooms.includes(newName)) {
+  
+  // 只要畫面上有了，就往後跳一號
+  while (existingNames.includes(newName)) {
     i++;
     newName = `新寢室${i}`;
   }
 
-  // 插入到列表最前方
   virtualRooms.unshift(newName);
-  
-  // 自動選取新房間
   setActiveRoom(newName);
   
-  // 提示：可以搭配 setTimeout 讓該 input 自動 focus，方便直接改名
   setTimeout(() => {
     const inputs = document.querySelectorAll('.room-name-input');
     if (inputs.length > 0) {
@@ -695,6 +687,7 @@ function removeFromRoom(row) {
   
   const saveBar = document.getElementById('dorm-save-bar');
   if (saveBar) saveBar.classList.remove('hidden');
+  renderDormInterface(); // 💡 補上這行，確保即時反應
 }
 
 
