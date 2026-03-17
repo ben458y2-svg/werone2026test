@@ -569,11 +569,20 @@ function clickToAssign(row, gender) {
   }
 
   const m = fullData.find(x => x.row == row);
-  m.room = activeRoom;
- // 修正點：Map 要用 .set()，且為了符合後端批次更新格式，存入一個物件
-  changedRows.set(row, { row: row, room: activeRoom });
+  
+ // 💡 關鍵修正點：使用 Spread Operator 並補上 _type
+  const pending = changedRows.get(row);
+  changedRows.set(row, { 
+    ...(pending || {}), // 1. 保留此人已有的其他變動 (如職稱)
+    row: row, 
+    room: activeRoom,
+    _type: 'dorm'        // 2. 標記這是寢室變動
+  });
+
   isDirty = true;
-  document.getElementById('dorm-save-bar').classList.remove('hidden');
+  
+  const saveBar = document.getElementById('dorm-save-bar');
+  if (saveBar) saveBar.classList.remove('hidden');
   renderDormInterface();
 }
 
