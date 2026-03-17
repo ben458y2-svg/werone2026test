@@ -1032,6 +1032,10 @@ function toggleRole(rowId, targetRole) {
 async function saveBatchData(btnElement) {
   if (changedRows.size === 0) return alert("尚未偵測到變動。");
 
+  // 💡 修正關鍵：先封裝資料，後面的邏輯才能使用 updates
+  const updates = Array.from(changedRows.values());
+  console.log("準備送出的更新資料:", updates);
+
   // 1. 判定本次變動是否涉及「組別相關」
   const hasGroupChanges = updates.some(u => u._type === 'group' || u.group !== undefined);
 
@@ -1062,13 +1066,6 @@ async function saveBatchData(btnElement) {
     btn.innerText = `⏳ 同步中...`;
     btn.disabled = true;
   }
-
-  // 4. 封裝資料
-  // 直接從 Map 中提取已經準備好的變更物件
-const updates = Array.from(changedRows.values());
-
-// 診斷：看看準備送出的資料長什麼樣子
-console.log("準備送出的更新資料:", updates);
 
   try {
     const adminName = sessionStorage.getItem('adminName') || currentUser;
