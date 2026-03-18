@@ -667,31 +667,48 @@ function clickToAssign(row, gender) {
     alert("請先點選右側的一個「房間」！");
     return;
   }
-  const roomMembers = fullData.filter(m => m.room === activeRoom);
-  if (roomMembers.length > 0 && roomMembers[0].gender !== gender) {
-    alert(`❌ 性別錯誤！此房間目前為${roomMembers[0].gender}生房。`);
-    return;
+
+  // --- 💡 關鍵修正：計算房間成員時，必須考慮暫存 (changedRows) ---
+  const roomMembers = fullData.filter(m => {
+    const pending = changedRows.get(m.row);
+    // 如果暫存中有 room 資訊，優先用暫存的；否則用原始資料
+    const currentRoom = (pending && pending.room !== undefined) ? pending.room : m.room;
+    return currentRoom === activeRoom;
+  });
+
+  // 檢查性別 (同樣要從暫存中抓取成員的正確性別，以防萬一)
+  if (roomMembers.length > 0) {
+    const firstMember = roomMembers[0];
+    const pendingFirst = changedRows.get(firstMember.row);
+    const firstGender = (pendingFirst && pendingFirst.gender) ? pendingFirst.gender : firstMember.gender;
+
+    if (firstGender !== gender) {
+      alert(`❌ 性別錯誤！此房間目前為 ${firstGender} 生房。`);
+      return;
+    }
   }
+
+  // 檢查人數上限 (現在能準確計算「即將入住」的人數了)
   if (roomMembers.length >= 4) {
     alert("❌ 房間已滿 4 人！");
     return;
   }
+  // --------------------------------------------------------
 
-  const m = fullData.find(x => x.row == row);
-  
- // 💡 關鍵修正點：使用 Spread Operator 並補上 _type
+  // 執行暫存寫入
   const pending = changedRows.get(row);
   changedRows.set(row, { 
-    ...(pending || {}), // 1. 保留此人已有的其他變動 (如職稱)
+    ...(pending || {}), 
     row: row, 
     room: activeRoom,
-    _type: 'dorm'        // 2. 標記這是寢室變動
+    _type: 'dorm' 
   });
 
   isDirty = true;
   
   const saveBar = document.getElementById('dorm-save-bar');
   if (saveBar) saveBar.classList.remove('hidden');
+  
   renderDormInterface();
 }
 
@@ -768,7 +785,9 @@ function removeFromRoom(row) {
   // 2. 💡 重要：解除髒資料警報
   // 因為關閉彈窗代表使用者「不存了」或是「取消本次編輯」
   // 這樣之後 switchTab 就不會再跳出攔截警告
-  isDirty = false; 
+  if (changedRows.size === 0) {
+    isDirty = false;
+  } 
   
   // 3. (選配) 清除必填欄位的紅色邊框遺留樣式
   const requiredInputs = document.querySelectorAll('#editModal .v-req');
@@ -874,17 +893,30 @@ function removeFromRoom(row) {
   }
 }
 
+// 取得某人目前的最新狀態 (優先看暫存，再看原始資料)
+function getCurrentValue(row, field) {
+  const pending = changedRows.get(row);
+  if (pending && pending[field] !== undefined) {
+    return pending[field];
+  }
+  const original = fullData.find(m => m.row == row);
+  return original ? original[field] : "";
+}
+  
   /**
  * 渲染編組介面
  */
 function renderGroupInterface() {
   const pool = document.getElementById('group-pool-list');
   const display = document.getElementById('group-grid-display');
+  if (!pool || !display) return; // 安全檢查
+
   const groupMap = {}; 
   const unassigned = [];
 
-  // 分組邏輯：優先讀取暫存區
+  // --- 💡 優化：統一分組與待分配邏輯 ---
   fullData.forEach(m => {
+    // 使用我們先前討論的邏輯：優先看暫存，沒有才看原始資料
     const pending = changedRows.get(m.row);
     const currentGroupName = (pending && pending.group !== undefined) ? pending.group : m.group;
 
@@ -892,39 +924,38 @@ function renderGroupInterface() {
       if (!groupMap[currentGroupName]) groupMap[currentGroupName] = [];
       groupMap[currentGroupName].push(m);
     } else {
+      // 修正點：這裡現在能正確抓到「剛被退組（暫存中）」的人了
       unassigned.push(m);
     }
   });
 
   // 渲染左側池
   pool.innerHTML = unassigned.map(m => `
-    <div class="pool-item" onclick="clickToAssignGroup(${m.row})" style="padding:10px; background:white; margin-bottom:5px; border:2px solid black; cursor:pointer;">
+    <div class="pool-item" onclick="clickToAssignGroup(${m.row})" 
+         style="padding:10px; background:white; margin-bottom:5px; border:2px solid black; cursor:pointer;">
       <div style="font-weight:bold;">${m.name}</div>
-      <div style="font-size:10px; color: #666;">${m.batch}</div>
+      <div style="font-size:10px; color: #666;">${m.batch || ''}</div>
     </div>
   `).join('');
 
-  // 排序邏輯
+  // 排序邏輯 (保持您的邏輯：空組排前面，其餘按名稱排)
   const allGroups = Array.from(new Set([...Object.keys(groupMap), ...virtualGroups])).sort((a, b) => {
-    const membersA = groupMap[a] || [];
-    const membersB = groupMap[b] || [];
-    if (membersA.length === 0 && membersB.length > 0) return -1;
-    if (membersA.length > 0 && membersB.length === 0) return 1;
-    return a.localeCompare(b);
+    const lenA = (groupMap[a] || []).length;
+    const lenB = (groupMap[b] || []).length;
+    if (lenA === 0 && lenB > 0) return -1;
+    if (lenA > 0 && lenB === 0) return 1;
+    return a.localeCompare(b, 'zh-Hant'); // 加入語系排序較穩定
   });
 
   // 渲染右側卡片
   display.innerHTML = allGroups.map((groupName, index) => {
     const ms = groupMap[groupName] || [];
     const isSelected = (activeGroup === groupName);
-    // 生成一個唯一的 ID 避免瀏覽器混淆
-    const inputId = `group-input-${index}`;
 
     return `
     <div class="item-card ${isSelected ? 'active-group' : ''}" onclick="setActiveGroup('${groupName}')">
       <div class="card-header">
         <input type="text" 
-               id="${inputId}"
                name="groupName"
                value="${groupName}" 
                onblur="renameGroup('${groupName}', this.value)"
@@ -932,11 +963,12 @@ function renderGroupInterface() {
                style="font-weight:900; border:none; background:transparent; width:100%; padding:0; outline:none;" 
                onclick="event.stopPropagation()">
       </div>
-      <div style="flex-grow:1;">
+      <div style="flex-grow:1; min-height:50px;">
         ${ms.length > 0 ? ms.map(m => `
-          <div class="member-row">
+          <div class="member-row" style="display:flex; justify-content:space-between; align-items:center;">
             <span>• ${m.name}</span>
-            <span style="color:var(--shine-red); cursor:pointer;" onclick="event.stopPropagation(); removeFromGroup(${m.row})">×</span>
+            <span style="color:var(--shine-red); cursor:pointer; font-weight:bold; font-size:18px; padding:0 5px;" 
+                  onclick="event.stopPropagation(); removeFromGroup(${m.row})">×</span>
           </div>
         `).join('') : '<div class="empty-placeholder">(空小組 - 點擊左側加入)</div>'}
       </div>
@@ -958,54 +990,67 @@ function createNewGroup() {
 function clickToAssignGroup(rowId) {
   if (!activeGroup) return alert("請先點選右側一個「小組卡片」！");
 
-  // 1. 取得乾淨的小組名稱 (移除你之前的 _BK_ 標記)
+  // 1. 取得乾淨的小組名稱
   const cleanGroupName = activeGroup.split('_BK_')[0];
 
-  // 2. 確保 changedRows (Map) 中有這筆 row 的空間
-  if (!changedRows.has(rowId)) {
-    changedRows.set(rowId, { row: rowId });
-  }
+  // 2. 取得舊有的暫存資料 (若無則建立新物件)
+  const existing = changedRows.get(rowId) || { row: rowId };
 
-  // 3. 同時更新多個欄位：組名與職稱 (Role)
-  const data = changedRows.get(rowId);
-  data.group = cleanGroupName;
-  data.teamRole = ""; // 這裡是對應你後端的職稱欄位名稱，請確認是 teamRole 還是 role
+  // 3. 使用 Spread Operator 更新並寫回 Map (符合 Bug #5 的修正建議)
+  // 這樣能確保 Map 偵測到物件地址的變動，且資料結構更清晰
+  changedRows.set(rowId, { 
+    ...existing, 
+    group: cleanGroupName, 
+    teamRole: "",    // 確認後端欄位名稱，通常為 teamRole
+    _type: 'group'   // 標記這是小組異動，方便後端或存檔邏輯辨識
+  });
 
   // 4. 狀態與 UI 更新
   isDirty = true;
+  
+  // 顯示存檔提示列
   const saveBar = document.getElementById('group-save-bar');
   if (saveBar) saveBar.classList.remove('hidden');
 
-  console.log(`[加入小組] Row ${rowId} 已分配至 ${cleanGroupName} 並清空職稱`);
+  console.log(`[加入小組] Row ${rowId} 已分配至 ${cleanGroupName} (暫存中)`);
 
-  // 5. 重新渲染
+  // 5. 重新渲染介面
   renderGroupInterface();
 }
 
 function removeFromGroup(rowId) {
-  // 1. 確保 changedRows 是 Map，並寫入變更
-  if (!changedRows.has(rowId)) {
-    changedRows.set(rowId, { row: rowId });
-  }
-  
-  // 2. 標記 group 為空字串
-  const data = changedRows.get(rowId);
-  data.group = ""; 
+  // 1. 取得該 row 已經存在的變動 (例如他可能剛改過寢室或是職稱)
+  const existing = changedRows.get(rowId) || { row: rowId };
 
-  // 3. 狀態標記
+  // 2. 使用更新後的物件寫回 Map，確保不遺失其他欄位的暫存
+  changedRows.set(rowId, { 
+    ...existing,       // 保留之前的變動 (如 room)
+    group: "",         // 執行退組
+    teamRole: "",      // 同步清空職稱，避免殘留到下一個組別
+    _type: 'group'     // 標記這是一次分組異動
+  });
+
+  // 3. 狀態與 UI 更新
   isDirty = true;
   
-  // 4. 顯示儲存條
   const saveBar = document.getElementById('group-save-bar');
   if (saveBar) saveBar.classList.remove('hidden');
 
-  console.log(`已將 Row ${rowId} 標記為移出小組`);
+  console.log(`[移出小組] Row ${rowId} 已移回待分配名單`);
 
-  // 5. 重新渲染 (renderGroupInterface 會優先看 changedRows，所以這個人會出現在左邊)
+  // 4. 重新渲染
+  // 因為你的 renderGroupInterface 已經修正為會檢查 changedRows，
+  // 所以執行完後，這個人會立刻出現在左側名單池。
   renderGroupInterface();
 }
 
 function renameGroup(oldName, newName) {
+  const nameExists = virtualGroups.includes(trimmedNewName);
+  if (nameExists && oldName !== trimmedNewName) {
+    alert("❌ 此組名已存在，請使用其他名稱。");
+    renderGroupInterface(); // 刷回原名
+    return;
+  }
   const trimmedNewName = newName.trim();
   if (!trimmedNewName || oldName === trimmedNewName) return;
 
