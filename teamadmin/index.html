@@ -959,17 +959,17 @@ function removeFromRoom(row) {
   // 建議的做法是：在彈窗的 HTML 標籤上統一加一個監聽（委派機制），或者如下：
   const modalForm = document.querySelector('#editModal form') || document.getElementById('editModal');
   
-  // 移除舊的監聽（如果有的話），或確保只綁定一次
-  // 這裡最簡單的做法是在外部初始化監聽，或使用一次性標記
-  if (!modalForm.dataset.listenerAttached) {
+  // 確保監聽器只綁定一次
+if (!modalForm.dataset.listenerAttached) {
   modalForm.addEventListener('change', (e) => {
-    // 💡 只針對真正的輸入欄位變動才標記 isDirty
+    // 💡 只要是真正的輸入欄位變動，就標記髒資料
     if (e.target.matches('input, select, textarea')) {
-      if (!isDirty) {
-        isModalDirty = true; // 標記彈窗有變動
-        isDirty = true;
-        console.log("偵測到有效欄位變動");
-      }
+      
+      // 💡 修正點：移除 if(!isDirty) 判斷，確保每次彈窗編輯都能被紀錄
+      isModalDirty = true; 
+      isDirty = true;      
+      
+      console.log("偵測到彈窗欄位變動，已標記 isModalDirty");
     }
   });
   modalForm.dataset.listenerAttached = "true";
@@ -1509,17 +1509,20 @@ async function saveBatchData(btnElement) {
 
   // 2. 只有在涉及組別變動時，執行重複組名檢查
   if (dups.length > 0) {
-  alert(`⚠️ 儲存攔截：偵測到重複的小組名稱：${[...new Set(dups)].join(', ')}`);
-  
-  // 💡 直接操作 DOM，繞過 switchTab 的 isDirty 檢查
-  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-  document.getElementById('tab-group-content').classList.remove('hidden');
-  
-  // 更新按鈕外觀 (讓使用者知道他被送回哪裡了)
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('btn-next'));
-  document.getElementById('btn-tab-group').classList.add('btn-next');
-  
-  return; 
+  alert(`⚠️ 儲存攔截：偵測到重複的小組名稱：${[...new Set(dups)].join(', ')}\n\n請修正後再儲存。`);
+
+  // 💡 修正點：使用 ID 明確控制隱藏/顯示，不依賴不存在的 Class
+  ['edit', 'dorm', 'group', 'role'].forEach(t => {
+    const content = document.getElementById('tab-' + t + '-content');
+    const btn = document.getElementById('btn-tab-' + t);
+    
+    // 如果是 group 就顯示，其他就隱藏
+    if (content) content.classList.toggle('hidden', t !== 'group');
+    // 如果是 group 就套用啟動樣式，其他就移除
+    if (btn) btn.classList.toggle('btn-next', t === 'group');
+  });
+
+  return; // 攔截，不執行後續 API 
 }
   }
 
