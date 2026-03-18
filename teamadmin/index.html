@@ -379,10 +379,7 @@ async function callApi(action, payload) {
     
     if (container && fullData.length === 0) {
       container.innerHTML = "📭 目前無相關學員資料。";
-    } else if (container) {
-      // 渲染完畢後移除 loading 文字
-      container.innerHTML = ""; 
-    }
+    } 
 
   } catch (err) {
     console.error("loadAllData 發生錯誤:", err);
@@ -393,23 +390,20 @@ async function callApi(action, payload) {
 
   // 4. 切換分頁
   function switchTab(tabName) {
-  // 💡 核心邏輯：如果目前有未儲存的變動 (isDirty)
+  // 💡 優化邏輯：強制保護未儲存變動
   if (isDirty) {
-    const confirmMessage = "⚠️ 您有尚未儲存的變更！\n\n「切換分頁」會清空目前分頁的所有暫存變動。\n\n• 按下「確定」：放棄變更並切換分頁\n• 按下「取消」：留在原分頁 (請記得點擊下方的儲存按鈕)";
+    const activeBtn = document.querySelector('.tab-btn.btn-next');
+    const moduleName = activeBtn ? activeBtn.innerText : "目前功能";
     
-    if (!confirm(confirmMessage)) {
-      return; // 🛑 攔截：使用者按下取消，留在原地
-    } else {
-      // 💡 使用者選擇「確定」放棄：重設狀態
-      changedRows.clear();
-      isDirty = false;
-      // 隱藏所有分頁的儲存條 (save-bar)
-      const saveBars = ['group-save-bar', 'dorm-save-bar', 'role-save-bar'];
-      saveBars.forEach(id => {
-        const bar = document.getElementById(id);
-        if (bar) bar.classList.add('hidden');
-      });
+    alert(`⚠️ 尚未儲存變更！\n請先點擊下方的「儲存」按鈕，完成【${moduleName}】的設定後再切換分頁。`);
+    
+    // 視覺引導：讓儲存條晃動一下 (需搭配 CSS)
+    const activeSaveBar = document.querySelector('.save-bar:not(.hidden)');
+    if (activeSaveBar) {
+      activeSaveBar.style.boxShadow = "0 0 20px var(--shine-red)";
+      setTimeout(() => activeSaveBar.style.boxShadow = "", 1000);
     }
+    return; // 🛑 強力攔截，不讓使用者切換
   }
 
   // --- 以下為原本的切換顯示與按鈕樣式邏輯 ---
@@ -810,14 +804,17 @@ function removeFromRoom(row) {
   // 移除舊的監聽（如果有的話），或確保只綁定一次
   // 這裡最簡單的做法是在外部初始化監聽，或使用一次性標記
   if (!modalForm.dataset.listenerAttached) {
-    modalForm.addEventListener('input', () => {
+  modalForm.addEventListener('change', (e) => {
+    // 💡 只針對真正的輸入欄位變動才標記 isDirty
+    if (e.target.matches('input, select, textarea')) {
       if (!isDirty) {
         isDirty = true;
-        console.log("偵測到個人資料變動");
+        console.log("偵測到有效欄位變動");
       }
-    });
-    modalForm.dataset.listenerAttached = "true";
-  }
+    }
+  });
+  modalForm.dataset.listenerAttached = "true";
+}
 
   // 3. 💡 修正重複調用問題 (Polish #2)：只在最後顯示彈窗
   document.getElementById('editModal').classList.remove('hidden');
@@ -1117,10 +1114,18 @@ function renameGroup(oldName, newName) {
   const trimmedNewName = newName.trim();
   if (!trimmedNewName || oldName === trimmedNewName) return;
   
-  const nameExists = virtualGroups.includes(trimmedNewName);
-  if (nameExists && oldName !== trimmedNewName) {
-    alert("❌ 此組名已存在，請使用其他名稱。");
-    renderGroupInterface(); // 刷回原名
+  // 💡 關鍵修正：統合「虛擬組」與「資料庫現有組(含暫存)」
+  const allExistingGroups = new Set([
+    ...virtualGroups,
+    ...fullData.map(m => {
+      const p = changedRows.get(m.row);
+      return (p && p.group !== undefined) ? p.group : m.group;
+    }).filter(Boolean)
+  ]);
+
+  if (allExistingGroups.has(trimmedNewName) && trimmedNewName !== oldName) {
+    alert(`❌ 組名「${trimmedNewName}」已存在，請使用其他名稱。`);
+    renderGroupInterface();
     return;
   }
 
@@ -1327,22 +1332,19 @@ async function saveBatchData(btnElement) {
   const hasGroupChanges = updates.some(u => u._type === 'group' || u.group !== undefined);
 
   // 2. 只有在涉及組別變動時，執行重複組名檢查
-  if (hasGroupChanges) {
-    const groupContainer = document.getElementById('group-grid-display');
-    // 確保只在「編組調整」分頁有內容且可見時檢查
-    if (groupContainer && groupContainer.offsetParent !== null) { 
-      const groupInputs = groupContainer.querySelectorAll('input');
-      const names = Array.from(groupInputs).map(i => i.value.trim());
-      const filledNames = names.filter(n => n !== "");
-      const dups = filledNames.filter((item, index) => filledNames.indexOf(item) !== index);
-      
-      if (dups.length > 0) {
-        alert(`⚠️ 儲存攔截：\n偵測到重複的小組名稱：${[...new Set(dups)].join(', ')}\n\n請修正後再儲存。`);
-        switchTab('group'); 
-        return;
-      }
-    }
-  }
+  if (dups.length > 0) {
+  alert(`⚠️ 儲存攔截：偵測到重複的小組名稱：${[...new Set(dups)].join(', ')}`);
+  
+  // 💡 直接操作 DOM，繞過 switchTab 的 isDirty 檢查
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+  document.getElementById('tab-group-content').classList.remove('hidden');
+  
+  // 更新按鈕外觀 (讓使用者知道他被送回哪裡了)
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('btn-next'));
+  document.getElementById('btn-tab-group').classList.add('btn-next');
+  
+  return; 
+}
 
   // 3. 處理按鈕狀態
   // 排除使用 event.currentTarget 的不穩定性，優先使用傳入的 btnElement
