@@ -10,7 +10,7 @@
       --shine-lime: #00ff7f; --shine-black: #1a1a1a;
       --shine-bg: #ffffff; --shine-light: #f4f7f5;
       --shine-gray: #d1d1d1; --shine-red: #ff4d4d;
-      --shine-yellow: #fbc02d;
+      --shine-yellow: #fbc02d; --shine-blue: #2196f3;
     }
     
     body { font-family: "Inter", "Noto Sans TC", sans-serif; background-color: #f0f0f0; margin: 0; padding: 10px; }
@@ -44,6 +44,7 @@
       background: white; color: var(--shine-black);
     }
     .btn-next { background: var(--shine-black); color: var(--shine-lime); }
+    .btn-batch { background: var(--shine-yellow); color: black; display: none; margin-bottom: 10px; }
 
     input, select, textarea { border: 2px solid var(--shine-black); padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-top: 5px; }
     label { font-weight: 900; background: var(--shine-lime); padding: 2px 10px; display: inline-block; cursor: pointer; }
@@ -67,16 +68,20 @@
     .loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; font-weight: 900; }
 
     /* 財務專用表格樣式 */
-.finance-table { width: 100%; border-collapse: collapse; background: white; border: 3px solid var(--shine-black); }
-.finance-table th { background: var(--shine-black); color: var(--shine-lime); padding: 12px; text-align: left; }
-.finance-table td { border: 1px solid var(--shine-gray); padding: 10px; font-size: 14px; }
-.finance-table tr:hover { background: #fffde7; cursor: pointer; }
+    .finance-table { width: 100%; border-collapse: collapse; background: white; border: 3px solid var(--shine-black); }
+    .finance-table th { background: var(--shine-black); color: var(--shine-lime); padding: 12px; text-align: left; }
+    .finance-table td { border: 1px solid var(--shine-gray); padding: 10px; font-size: 14px; }
+    .finance-table tr:hover { background: #fffde7; cursor: pointer; }
+    .group-header { background: #e3f2fd !important; font-weight: 900; border-bottom: 2px solid var(--shine-black) !important; }
 
-/* 狀態標籤 */
-.badge { padding: 4px 8px; font-weight: 900; font-size: 12px; border: 1px solid black; }
-.bg-red { background: var(--shine-red); color: white; }
-.bg-green { background: var(--shine-lime); color: black; }
-.bg-yellow { background: var(--shine-yellow); color: black; }
+    /* 狀態標籤 */
+    .badge { padding: 4px 8px; font-weight: 900; font-size: 12px; border: 1px solid black; }
+    .bg-red { background: var(--shine-red); color: white; }
+    .bg-green { background: var(--shine-lime); color: black; }
+    .bg-yellow { background: var(--shine-yellow); color: black; }
+
+    /* 批次匯總資訊卡 */
+    #batch-summary-info { background: #fff9c4; padding: 15px; border: 3px dashed #000; margin-bottom: 20px; font-weight: 900; }
   </style>
 </head>
 <body>
@@ -115,6 +120,8 @@
       </div>
     </div>
 
+    <button id="btn-batch-edit" class="btn btn-batch" onclick="openBatchEdit()">⚡ 批次登記選中項目 (<span id="selected-count">0</span>)</button>
+
     <div id="section-list" class="grid-display-area"></div>
 
     <div id="section-stats" class="hidden">
@@ -134,6 +141,8 @@
       <input type="hidden" id="edit-row-index">
       
       <div id="modal-fields-container">
+        <div id="batch-summary-info" class="hidden"></div>
+
         <div class="form-section">
           <div class="section-title">個人資料</div>
           <div class="grid-row">
@@ -176,38 +185,39 @@
         </div>
 
         <div class="form-section" style="background: #fff9c4; border: 3px solid var(--shine-yellow);">
-          <div class="section-title" style="background: var(--shine-yellow); color: black;">資料異動</div>
+          <div class="section-title" style="background: var(--shine-yellow); color: black;">資料異動備註</div>
           <div class="form-group">
-            <label for="m-adminNote" style="background: var(--shine-yellow);">資料更新備註 (行政後台)</label>
-            <textarea id="m-adminNote" style="height: 80px;" class="v-req"></textarea>
+            <textarea id="m-adminNote" style="height: 60px;" placeholder="請輸入異動說明..."></textarea>
           </div>
         </div>
       </div>
-      <div class="form-section" style="background: #e3f2fd; border: 3px solid #2196f3;">
-  <div class="section-title" style="background: #2196f3; color: white;">💰 財務繳費登記</div>
-  <div class="grid-row">
-    <div class="form-group"><label>報名狀態</label>
-      <select id="m-status">
-        <option value="尚未繳費">尚未繳費</option>
-        <option value="已繳訂金">已繳訂金</option>
-        <option value="已繳全額">已繳全額</option>
-        <option value="已退費">已退費</option>
-      </select>
-    </div>
-    <div class="form-group"><label>已繳金額</label><input type="number" id="m-paid"></div>
-    <div class="form-group"><label>補助金額</label><input type="number" id="m-subsidy"></div>
-    <div class="form-group"><label>繳費管道</label>
-      <select id="m-payMethod">
-        <option value="匯款">匯款</option>
-        <option value="現金">現金</option>
-        <option value="現場繳費">現場繳費</option>
-        <option value="其他">其他</option>
-      </select>
-    </div>
-    <div class="form-group"><label>收款人</label><input type="text" id="m-receiver"></div>
-  </div>
-  <div class="form-group"><label>繳費備註</label><input type="text" id="m-payNote"></div>
-</div>
+
+      <div class="form-section" id="finance-module" style="background: #e3f2fd; border: 3px solid #2196f3;">
+        <div class="section-title" style="background: #2196f3; color: white;">💰 財務繳費登記</div>
+        <div class="grid-row">
+          <div class="form-group"><label>報名狀態</label>
+            <select id="m-status">
+              <option value="尚未繳費">尚未繳費</option>
+              <option value="已繳訂金">已繳訂金</option>
+              <option value="已繳全額">已繳全額</option>
+              <option value="已退費">已退費</option>
+            </select>
+          </div>
+          <div class="form-group"><label>已繳金額</label><input type="number" id="m-paid"></div>
+          <div class="form-group"><label>補助金額</label><input type="number" id="m-subsidy"></div>
+          <div class="form-group"><label>繳費管道</label>
+            <select id="m-payMethod">
+              <option value="匯款">匯款</option>
+              <option value="現金">現金</option>
+              <option value="現場繳費">現場繳費</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div class="form-group"><label>收款人</label><input type="text" id="m-receiver"></div>
+        </div>
+        <div class="form-group"><label>繳費備註</label><input type="text" id="m-payNote"></div>
+      </div>
+
       <div style="text-align: center; margin-top: 30px; margin-bottom: 40px;">
         <button class="btn btn-next" onclick="submitEdit()">儲存變更紀錄</button>
       </div>
@@ -215,11 +225,12 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwr3Syoqgjokcjt8KN5I6sK0XDgfsc9IAszjvVmwbbzM_iMxF7UukIyGHkS18LI7pGo/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwOylaunhUfkTLUygJqXj0En1qGwXBXg66c2Qk21Yb8KhwR3ybJvQ2GAbYegiZt1xc/exec"; 
     let fullData = [];
     let currentTab = 'edit';
     let searchTimer;
     let isModalDirty = false;
+    let batchSelectedRows = []; // 儲存批次勾選的 row IDs
 
     // --- API 核心 ---
     async function api(payload) {
@@ -228,13 +239,13 @@
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
         return await res.json();
       } catch(e) {
-        alert("連線超時，請重新整理頁面");
+        alert("連線超時或錯誤，請檢查後端部署版本");
       } finally {
         document.getElementById('loading').classList.add('hidden');
       }
     }
 
-    // --- 登入與基礎功能 ---
+    // --- 登入 ---
     async function doLogin() {
       const u = document.getElementById('u_name').value;
       const p = document.getElementById('u_pass').value;
@@ -260,114 +271,267 @@
       }
     }
 
-    // --- 分頁切換 ---
     function switchMainTab(tab) {
       currentTab = tab;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('tab-' + tab).classList.add('active');
-
+      
       const isStats = (tab === 'stats');
       document.getElementById('search-section').classList.toggle('hidden', isStats);
       document.getElementById('section-list').classList.toggle('hidden', isStats);
       document.getElementById('section-stats').classList.toggle('hidden', !isStats);
+      
+      // 批次按鈕隱藏重設
+      updateBatchUI();
 
       if (isStats) refreshStats(); else handleSearch();
     }
 
-    // --- 搜尋與列表渲染 ---
     function handleSearch() {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {
         const key = document.getElementById('search-input').value.toLowerCase();
-        const filtered = fullData.filter(m => 
+        let filtered = fullData.filter(m => 
           (m.name && m.name.toLowerCase().includes(key)) ||
           (m.phone && m.phone.includes(key)) ||
-          (m.church && m.church.toLowerCase().includes(key))
+          (m.church && m.church.toLowerCase().includes(key)) ||
+          (m.group && m.group.toLowerCase().includes(key))
         );
         document.getElementById('stats-count').innerText = `${filtered.length} 筆`;
         renderList(filtered);
       }, 200);
     }
 
+    // --- 渲染清單 (分組邏輯) ---
     function renderList(data) {
-  const container = document.getElementById('section-list');
-  
-  // 如果是繳費登記分頁，使用表格顯示
-  if (currentTab === 'finance') {
-    let html = `
-      <table class="finance-table">
-        <thead>
-          <tr>
-            <th>姓名</th>
-            <th>狀態</th>
-            <th>應收</th>
-            <th>已繳</th>
-            <th>補助</th>
-            <th>餘額</th>
-            <th>最後更新</th>
-          </tr>
-        </thead>
-        <tbody>`;
-    
-    data.forEach(m => {
-      const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
-      const statusClass = balance <= 0 ? 'bg-green' : (m.paid > 0 ? 'bg-yellow' : 'bg-red');
+      const container = document.getElementById('section-list');
       
-      html += `
-        <tr onclick="openAction(${m.row})">
-          <td><strong>${m.name}</strong><br><small>${m.church || ''}</small></td>
-          <td><span class="badge ${m.status === '已繳全額' ? 'bg-green' : 'bg-yellow'}">${m.status || '待處理'}</span></td>
-          <td>${m.totalDue}</td>
-          <td style="color:blue; font-weight:bold;">${m.paid}</td>
-          <td>${m.subsidy}</td>
-          <td style="color:${balance > 0 ? 'red' : 'green'}; font-weight:bold;">${balance}</td>
-          <td style="font-size:11px; color:#666;">${m.lastUpdate || '-'}</td>
-        </tr>`;
-    });
-    html += `</tbody></table>`;
-    container.innerHTML = html;
-    container.style.display = 'block'; // 確保表格佔滿寬度
-  } 
-  // 如果是資料編修，維持卡片顯示
-  else {
-    container.innerHTML = data.map(m => `
-      <div class="item-card" onclick="openAction(${m.row})">
-        <div style="display:flex; justify-content:space-between;">
-          <strong>${m.name}</strong>
-          <span class="badge bg-green">${m.role}</span>
-        </div>
-        <div style="font-size:13px; margin-top:8px;">
-          <div>${m.church || '未填教會'}</div>
-          <div style="color:#666;">${m.phone}</div>
-        </div>
-      </div>
-    `).join('');
-  }
-}
+      if (currentTab === 'finance') {
+        // 先排序：確保同團體排在一起
+        data.sort((a, b) => (a.group || "個人報名").localeCompare(b.group || "個人報名"));
 
-    // --- 報名現況統計 ---
+        let html = `
+          <table class="finance-table">
+            <thead>
+              <tr>
+                <th style="width:40px;"><input type="checkbox" onchange="selectAll(this)"></th>
+                <th>姓名 / 窗口資訊</th>
+                <th>狀態</th>
+                <th>應收/已繳</th>
+                <th>餘額</th>
+              </tr>
+            </thead>
+            <tbody>`;
+        
+        let lastGroup = null;
+        data.forEach(m => {
+          const currentGroup = m.group || "個人報名";
+          if (currentGroup !== lastGroup) {
+            const isIndividual = currentGroup === "個人報名";
+            html += `
+              <tr class="group-header">
+                <td colspan="5" style="padding:10px;">
+                  ${isIndividual ? '📍 個人報名' : '📦 團體：' + currentGroup}
+                  ${!isIndividual ? `<span style="margin-left:15px; font-size:12px; font-weight:normal; color:#444;">👤 窗口：${m.contactName || '未填'} | 📱 ${m.contactPhone || '-'}</span>` : ''}
+                </td>
+              </tr>`;
+            lastGroup = currentGroup;
+          }
+
+          const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
+          html += `
+            <tr onclick="openAction(${m.row})">
+              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="${m.row}" onchange="updateBatchUI()"></td>
+              <td style="padding-left:20px;"><strong>${m.name}</strong><br><small>${m.church || ''}</small></td>
+              <td><span class="badge ${balance <= 0 ? 'bg-green' : (m.paid > 0 ? 'bg-yellow' : 'bg-red')}">${m.status}</span></td>
+              <td>${m.totalDue} / <span style="color:blue;">${m.paid}</span></td>
+              <td style="color:${balance > 0 ? 'red' : 'green'}; font-weight:900;">${balance}</td>
+            </tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        container.style.display = 'block';
+      } else {
+        container.innerHTML = data.map(m => `
+          <div class="item-card" onclick="openAction(${m.row})">
+            <div style="display:flex; justify-content:space-between;">
+              <strong>${m.name}</strong>
+              <span class="badge bg-green">${m.role}</span>
+            </div>
+            <div style="font-size:13px; margin-top:8px;">
+              <div>${m.church || '未填教會'}</div>
+              <div style="color:#666;">${m.phone}</div>
+              ${m.group ? `<div style="color:var(--shine-blue); font-weight:900; margin-top:4px;">📦 ${m.group}</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // --- 批次功能 ---
+    function updateBatchUI() {
+      const selected = document.querySelectorAll('.row-checkbox:checked');
+      const btn = document.getElementById('btn-batch-edit');
+      btn.style.display = (currentTab === 'finance' && selected.length > 0) ? 'inline-flex' : 'none';
+      document.getElementById('selected-count').innerText = selected.length;
+    }
+
+    function selectAll(master) {
+      document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = master.checked);
+      updateBatchUI();
+    }
+
+    function openBatchEdit() {
+      batchSelectedRows = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
+      if (batchSelectedRows.length === 0) return;
+
+      // 計算財務匯總
+      let totalDue = 0, totalPaid = 0, totalBalance = 0;
+      batchSelectedRows.forEach(id => {
+        const m = fullData.find(x => String(x.row) === id);
+        if (m) {
+          totalDue += Number(m.totalDue || 0);
+          totalPaid += Number(m.paid || 0);
+          totalBalance += (Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0));
+        }
+      });
+
+      // UI 調整
+      document.getElementById('edit-row-index').value = "BATCH";
+      document.querySelectorAll('#modal-fields-container .form-section').forEach(sec => sec.classList.add('hidden'));
+      document.getElementById('finance-module').classList.remove('hidden');
+      
+      const summary = document.getElementById('batch-summary-info');
+      summary.classList.remove('hidden');
+      summary.innerHTML = `
+        <div style="font-size:1.1em; color:var(--shine-blue); border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:10px;">📊 批次統計：選中 ${batchSelectedRows.length} 人</div>
+        <div style="display:flex; justify-content:space-between;"><span>應繳總額：</span><span>$${totalDue}</span></div>
+        <div style="display:flex; justify-content:space-between; color:red;"><span>待繳餘額：</span><span>$${totalBalance}</span></div>
+        <div style="margin-top:10px; background:#fff; padding:8px; border:1px solid #000; font-size:13px; font-weight:normal;">
+          💡 <strong>寫入規則：</strong> 下方填寫的金額會【分別套用】給每個人。<br>
+          例如填寫 1500，這 ${batchSelectedRows.length} 人每個人都會被記錄已繳 1500。
+        </div>
+      `;
+
+      // 清空預設值
+      document.getElementById('m-status').value = "已繳全額";
+      document.getElementById('m-paid').value = ""; // 強制留空
+      document.getElementById('m-payNote').value = "團體批次繳費";
+      document.getElementById('m-receiver').value = sessionStorage.getItem('admin_name');
+
+      document.querySelector('#editModal h2').innerText = "⚡ 批次繳費登記";
+      document.getElementById('editModal').classList.remove('hidden');
+      isModalDirty = false;
+    }
+
+    // --- 單人編輯開啟 ---
+    function openAction(rowId) {
+      const m = fullData.find(item => item.row === rowId);
+      if (!m) return;
+
+      document.getElementById('edit-row-index').value = m.row;
+      document.getElementById('batch-summary-info').classList.add('hidden');
+      
+      // 填入所有欄位
+      const fields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','adminNote','status','paid','subsidy','payMethod','receiver','payNote'];
+      fields.forEach(f => {
+        const el = document.getElementById('m-' + f);
+        if (el) el.value = m[f] || (el.tagName === 'SELECT' ? el.options[0].value : "");
+      });
+
+      // 根據分頁顯示區塊
+      const allSections = document.querySelectorAll('#modal-fields-container .form-section');
+      const financeSec = document.getElementById('finance-module');
+      if (currentTab === 'finance') {
+        allSections.forEach(s => s.classList.add('hidden'));
+        financeSec.classList.remove('hidden');
+      } else {
+        allSections.forEach(s => s.classList.remove('hidden'));
+      }
+
+      document.querySelector('#editModal h2').innerText = `📝 編輯：${m.name}`;
+      document.getElementById('editModal').classList.remove('hidden');
+      isModalDirty = false;
+    }
+
+    function closeModal() {
+      if (isModalDirty && !confirm("尚未儲存，確定關閉？")) return;
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    // --- 儲存實作 ---
+    async function submitEdit() {
+      const rowId = document.getElementById('edit-row-index').value;
+      const inputPaid = document.getElementById('m-paid').value;
+
+      // 批次模式邏輯
+      if (rowId === "BATCH") {
+        if (!inputPaid || Number(inputPaid) <= 0) {
+          alert("❌ 批次模式下必須填寫「已繳金額」。若不改動金額請關閉後個別編輯。");
+          return;
+        }
+
+        if (!confirm(`確定要將這 ${batchSelectedRows.length} 位成員，每位都登記已繳 $${inputPaid} 元嗎？`)) return;
+
+        const updates = batchSelectedRows.map(id => {
+          const m = fullData.find(x => String(x.row) === id);
+          return {
+            row: id,
+            data: { 
+              ...m, 
+              status: document.getElementById('m-status').value,
+              paid: Number(inputPaid),
+              subsidy: Number(document.getElementById('m-subsidy').value || 0),
+              payMethod: document.getElementById('m-payMethod').value,
+              payNote: document.getElementById('m-payNote').value,
+              receiver: document.getElementById('m-receiver').value,
+              adminNote: (m.adminNote || "") + " [批次更新]"
+            }
+          };
+        });
+
+        const res = await api({ action: 'batchUpdate', token: sessionStorage.getItem('admin_token'), updates, adminName: sessionStorage.getItem('admin_name') });
+        if (res.success) { alert("✅ 批次更新成功"); closeModal(); fetchData(); }
+        return;
+      }
+
+      // 單人模式邏輯 (僅檢查可見的必填項)
+      const reqs = Array.from(document.querySelectorAll('#editModal .v-req')).filter(el => el.offsetParent !== null);
+      let missing = [];
+      reqs.forEach(el => {
+        if (!el.value.trim() && el.id !== 'm-medical') {
+          missing.push(el.closest('.form-group').querySelector('label').innerText);
+          el.style.border = "2px solid red";
+        } else { el.style.border = "2px solid black"; }
+      });
+
+      if (missing.length > 0) { alert("未填必填項：" + missing.join(", ")); return; }
+
+      const updateData = {};
+      const allFields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','adminNote','status','paid','subsidy','payMethod','receiver','payNote'];
+      allFields.forEach(f => updateData[f] = document.getElementById('m-' + f).value);
+
+      const res = await api({ action: 'updateParticipant', token: sessionStorage.getItem('admin_token'), row: rowId, data: updateData, adminName: sessionStorage.getItem('admin_name') });
+      if (res.success) { alert("✅ 資料已同步"); isModalDirty = false; closeModal(); fetchData(); }
+    }
+
+    // --- 統計 ---
     async function refreshStats() {
       const container = document.getElementById('stats-container');
       container.innerHTML = '<div class="stats-card">計算中...</div>';
       const res = await api({ action: 'getRegistrationStats', token: sessionStorage.getItem('admin_token') });
-      if (res && res.success) {
-        renderStatsDashboard(res.data);
-      }
+      if (res && res.success) renderStatsDashboard(res.data);
     }
 
     function renderStatsDashboard(data) {
       const container = document.getElementById('stats-container');
       container.innerHTML = '';
-
       const configs = [
         { title: "👫 性別 - 報名管道", key: "gender" },
         { title: "🎓 報名身分 - 報名管道", key: "role" },
         { title: "✝️ 基督徒 - 報名管道", key: "christian" },
-        { title: "💧 已受洗 - 報名管道", key: "baptized" },
-        { title: "✨ 曾參加 SHINE - 報名管道", key: "attended" },
         { title: "⛪ 所屬教會 - 報名管道", key: "church" }
       ];
-
       configs.forEach(conf => {
         if (data[conf.key]) {
           const card = document.createElement('div');
@@ -382,10 +546,8 @@
       let html = `<table class="stats-table"><thead><tr><th>類別</th>`;
       channels.forEach(ch => html += `<th>${ch}</th>`);
       html += `<th class="total-cell">小計</th></tr></thead><tbody>`;
-      
       let grandTotal = 0;
       let colTotals = {};
-
       Object.keys(groupData).sort().forEach(label => {
         let rowSum = 0;
         html += `<tr><td class="row-label">${label}</td>`;
@@ -398,140 +560,19 @@
         html += `<td class="total-cell">${rowSum}</td></tr>`;
         grandTotal += rowSum;
       });
-
       html += `</tbody><tfoot><tr class="total-cell"><td>總計</td>`;
       channels.forEach(ch => html += `<td>${colTotals[ch] || 0}</td>`);
       html += `<td>${grandTotal}</td></tr></tfoot></table>`;
       return html;
     }
 
-    // --- 彈窗邏輯 ---
-    function openAction(rowId) {
-      const m = fullData.find(item => item.row === rowId);
-      if (!m) return;
-
-      document.getElementById('edit-row-index').value = m.row;
-      document.getElementById('m-name').value = m.name || "";
-      document.getElementById('m-gender').value = m.gender || "男";
-      document.getElementById('m-birthday').value = m.birthday || "";
-      document.getElementById('m-phone').value = m.phone || "";
-      document.getElementById('m-email').value = m.email || "";
-      document.getElementById('m-role').value = m.role || "國中";
-      document.getElementById('m-school').value = m.school || "";
-      document.getElementById('m-grade').value = m.grade || "";
-      document.getElementById('m-church').value = m.church || "";
-      document.getElementById('m-isChristian').value = m.isChristian || "是";
-      document.getElementById('m-isBaptized').value = m.isBaptized || "是";
-      document.getElementById('m-iceName').value = m.iceName || "";
-      document.getElementById('m-iceRel').value = m.iceRel || "";
-      document.getElementById('m-icePhone').value = m.icePhone || "";
-      document.getElementById('m-isAttended').value = m.isAttended || "否";
-      document.getElementById('m-dietary').value = m.dietary || "葷食";
-      document.getElementById('m-medical').value = m.medical || "";
-      document.getElementById('m-adminNote').value = m.adminNote || "";
-
-      document.getElementById('m-status').value = m.status || "尚未繳費";
-      document.getElementById('m-paid').value = m.paid || 0;
-      document.getElementById('m-subsidy').value = m.subsidy || 0;
-      document.getElementById('m-payMethod').value = m.payMethod || "匯款";
-      document.getElementById('m-receiver').value = m.receiver || "";
-      document.getElementById('m-payNote').value = m.payNote || "";
-
-      // --- 關鍵：根據分頁顯示/隱藏區塊 ---
-  const allSections = document.querySelectorAll('#modal-fields-container .form-section');
-  const financeSection = document.querySelector('.form-section[style*="background: #e3f2fd"]'); // 藍色背景那個
-  const editTitle = document.querySelector('#editModal h2');
-
-  if (currentTab === 'finance') {
-    // 隱藏非財務的區塊
-    allSections.forEach(sec => sec.classList.add('hidden'));
-    financeSection.classList.remove('hidden');
-    editTitle.innerText = `💰 繳費登記：${m.name}`;
-  } else {
-    // 顯示所有區塊 (資料編修模式)
-    allSections.forEach(sec => sec.classList.remove('hidden'));
-    editTitle.innerText = `📝 編輯詳細資料：${m.name}`;
-  }
-
-  document.getElementById('editModal').classList.remove('hidden');
-  isModalDirty = false;
-    }
-
-    function attachModalListener() {
-      document.getElementById('editModal').addEventListener('change', () => isModalDirty = true);
-    }
-
-    function closeModal() {
-      if (isModalDirty && !confirm("尚未儲存，確定關閉？")) return;
-      document.getElementById('editModal').classList.add('hidden');
-    }
-
-    async function submitEdit() {
-      const reqs = document.querySelectorAll('#editModal .v-req');
-      let missingLabels = [];
-      reqs.forEach(el => {
-        if (!el.value.trim() && el.id !== 'm-adminNote' && el.id !== 'm-medical') {
-          const label = el.closest('.form-group').querySelector('label').innerText;
-          missingLabels.push(label);
-          el.style.border = "2px solid var(--shine-red)";
-        } else {
-          el.style.border = "2px solid var(--shine-black)";
-        }
-      });
-
-      if (missingLabels.length > 0) {
-        alert("以下必填欄位未填寫：\n" + missingLabels.join(", "));
-        return;
-      }
-
-      const row = document.getElementById('edit-row-index').value;
-      const updateData = {
-        name: document.getElementById('m-name').value,
-        gender: document.getElementById('m-gender').value,
-        birthday: document.getElementById('m-birthday').value,
-        phone: document.getElementById('m-phone').value,
-        email: document.getElementById('m-email').value,
-        role: document.getElementById('m-role').value,
-        school: document.getElementById('m-school').value,
-        grade: document.getElementById('m-grade').value,
-        church: document.getElementById('m-church').value,
-        isChristian: document.getElementById('m-isChristian').value,
-        isBaptized: document.getElementById('m-isBaptized').value,
-        iceName: document.getElementById('m-iceName').value,
-        iceRel: document.getElementById('m-iceRel').value,
-        icePhone: document.getElementById('m-icePhone').value,
-        isAttended: document.getElementById('m-isAttended').value,
-        dietary: document.getElementById('m-dietary').value,
-        medical: document.getElementById('m-medical').value,
-        status: document.getElementById('m-status').value,
-        paid: document.getElementById('m-paid').value,
-        subsidy: document.getElementById('m-subsidy').value,
-        payMethod: document.getElementById('m-payMethod').value,
-        receiver: document.getElementById('m-receiver').value,
-        payNote: document.getElementById('m-payNote').value,
-        adminNote: document.getElementById('m-adminNote').value
-      };
-
-      const res = await api({
-        action: 'updateParticipant',
-        token: sessionStorage.getItem('admin_token'),
-        row: row,
-        data: updateData,
-        adminName: sessionStorage.getItem('admin_name')
-      });
-
-      if (res && res.success) {
-        alert("✅ 資料已同步至雲端試算表");
-        isModalDirty = false;
-        closeModal();
-        fetchData(); 
-      }
-    }
-    
     function formatPhone(obj) {
       let val = obj.value.replace(/\D/g, ''); 
       if (val.length > 4) obj.value = val.slice(0, 4) + '-' + val.slice(4, 10);
       else obj.value = val;
+    }
+    function attachModalListener() {
+      document.getElementById('editModal').addEventListener('change', () => isModalDirty = true);
     }
   </script>
 </body>
