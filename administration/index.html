@@ -104,41 +104,41 @@
         <div class="form-section">
           <div class="section-title">個人資料</div>
           <div class="grid-row">
-            <div class="form-group"><label for="m-name">姓名</label><input type="text" id="m-name"></div>
-            <div class="form-group"><label for="m-gender">性別</label><select id="m-gender"><option>男</option><option>女</option></select></div>
-            <div class="form-group"><label for="m-birthday">生日</label><input type="date" id="m-birthday"></div>
-            <div class="form-group"><label for="m-phone">手機</label><input type="tel" id="m-phone"></div>
-            <div class="form-group"><label for="m-email">電子郵件</label><input type="email" id="m-email"></div>
+            <div class="form-group"><label for="m-name">姓名</label><input type="text" id="m-name" class="v-req"></div>
+            <div class="form-group"><label for="m-gender">性別</label><select id="m-gender" class="v-req"><option>男</option><option>女</option></select></div>
+            <div class="form-group"><label for="m-birthday">生日</label><input type="date" id="m-birthday" class="v-req"></div>
+            <div class="form-group"><label for="m-phone">手機</label><input type="tel" id="m-phone" class="v-req" oninput="formatPhone(this)"></div>
+            <div class="form-group"><label for="m-email">電子郵件</label><input type="email" id="m-email" class="v-req"></div>
           </div>
         </div>
 
         <div class="form-section">
           <div class="section-title">參與身分</div>
           <div class="grid-row">
-            <div class="form-group"><label for="m-role">報名身分</label><select id="m-role"><option>國中</option><option>高中職</option><option>大專</option><option>社青</option><option>傳道</option><option>牧師</option></select></div>
-            <div class="form-group"><label for="m-school">就讀學校</label><input type="text" id="m-school"></div>
-            <div class="form-group"><label for="m-grade">升上年級</label><input type="text" id="m-grade"></div>
-            <div class="form-group"><label for="m-church">所屬教會</label><input type="text" id="m-church"></div>
-            <div class="form-group"><label for="m-isChristian">是否為基督徒</label><select id="m-isChristian"><option>是</option><option>否</option></select></div>
-            <div class="form-group"><label for="m-isBaptized">是否已受洗</label><select id="m-isBaptized"><option>是</option><option>否</option></select></div>
+            <div class="form-group"><label for="m-role">報名身分</label><select id="m-role" class="v-req"><option>國中</option><option>高中職</option><option>大專</option><option>社青</option><option>傳道</option><option>牧師</option></select></div>
+            <div class="form-group"><label for="m-school">就讀學校</label><input type="text" id="m-school" class="v-req"></div>
+            <div class="form-group"><label for="m-grade">升上年級</label><input type="text" id="m-grade" class="v-req"></div>
+            <div class="form-group"><label for="m-church">所屬教會</label><input type="text" id="m-church" class="v-req"></div>
+            <div class="form-group"><label for="m-isChristian">是否為基督徒</label><select id="m-isChristian" class="v-req"><option>是</option><option>否</option></select></div>
+            <div class="form-group"><label for="m-isBaptized">是否已受洗</label><select id="m-isBaptized" class="v-req"><option>是</option><option>否</option></select></div>
           </div>
         </div>
 
         <div class="form-section">
           <div class="section-title">緊急聯絡人</div>
           <div class="grid-row">
-            <div class="form-group"><label for="m-iceName">緊急聯絡人</label><input type="text" id="m-iceName"></div>
-            <div class="form-group"><label for="m-iceRel">緊急連絡人關係</label><input type="text" id="m-iceRel"></div>
-            <div class="form-group"><label for="m-icePhone">緊急聯絡人電話</label><input type="tel" id="m-icePhone"></div>
+            <div class="form-group"><label for="m-iceName">緊急聯絡人</label><input type="text" id="m-iceName" class="v-req"></div>
+            <div class="form-group"><label for="m-iceRel">緊急連絡人關係</label><input type="text" id="m-iceRel" class="v-req"></div>
+            <div class="form-group"><label for="m-icePhone">緊急聯絡人電話</label><input type="tel" id="m-icePhone" class="v-req" oninput="formatPhone(this)"></div>
           </div>
         </div>
 
         <div class="form-section">
           <div class="section-title">營會行政</div>
           <div class="grid-row">
-            <div class="form-group"><label for="m-isAttended">曾參加SHINE營會</label><select id="m-isAttended"><option>是</option><option>否</option></select></div>
-            <div class="form-group"><label for="m-dietary">飲食需求</label><select id="m-dietary"><option>葷食</option><option>蛋奶素</option><option>純素</option></select></div>
-            <div class="form-group" style="grid-column: 1 / -1;"><label for="m-medical">特殊狀況與注意事項</label><input type="text" id="m-medical"></div>
+            <div class="form-group"><label for="m-isAttended">曾參加SHINE營會</label><select id="m-isAttended" class="v-req"><option>是</option><option>否</option></select></div>
+            <div class="form-group"><label for="m-dietary">飲食需求</label><select id="m-dietary" class="v-req"><option>葷食</option><option>蛋奶素</option><option>純素</option></select></div>
+            <div class="form-group" style="grid-column: 1 / -1;"><label for="m-medical" >特殊狀況與注意事項</label><input type="text" id="m-medical" class="v-req"></div>
           </div>
         </div>
 
@@ -146,7 +146,7 @@
           <div class="section-title" style="background: var(--shine-yellow); color: black;">資料異動</div>
           <div class="form-group">
             <label for="m-adminNote" style="background: var(--shine-yellow);">資料更新備註 (行政後台)</label>
-            <textarea id="m-adminNote" style="height: 80px;"></textarea>
+            <textarea id="m-adminNote" style="height: 80px;" class="v-req"></textarea>
           </div>
         </div>
       </div>
@@ -162,6 +162,8 @@
     let fullData = [];
     let currentTab = 'edit';
     let searchTimer;
+    let isDirty = false;
+    let isModalDirty = false;
 
     async function api(payload) {
       document.getElementById('loading').classList.remove('hidden');
@@ -175,6 +177,17 @@
       }
     }
 
+    // 手機自動格式化 0900-000000
+  function formatPhone(obj) {
+  let val = obj.value.replace(/\D/g, ''); 
+  if (val.length > 10) val = val.slice(0, 10);
+  if (val.length > 4) {
+    obj.value = val.slice(0, 4) + '-' + val.slice(4);
+  } else {
+    obj.value = val;
+  }
+}
+    
     async function doLogin() {
       const u = document.getElementById('u_name').value;
       const p = document.getElementById('u_pass').value;
@@ -278,49 +291,115 @@
       document.getElementById('editModal').classList.remove('hidden');
     }
 
-    function closeModal() { document.getElementById('editModal').classList.add('hidden'); }
+    // 監聽彈窗變動
+function attachModalListener() {
+  const modal = document.getElementById('editModal');
+  if (!modal.dataset.listenerAttached) {
+    modal.addEventListener('change', (e) => {
+      if (e.target.matches('input, select, textarea')) {
+        isModalDirty = true;
+        isDirty = true;
+        console.log("偵測到變動");
+      }
+    });
+    modal.dataset.listenerAttached = "true";
+  }
+}
+    
+    function closeModal() {
+  if (isModalDirty) {
+    const confirmClose = confirm("⚠️ 您有尚未儲存的編輯內容，確定要關閉嗎？");
+    if (!confirmClose) return;
+  }
+  
+  document.getElementById('editModal').classList.add('hidden');
+  isModalDirty = false;
+
+  // 清除紅框樣式
+  document.querySelectorAll('#editModal .v-req').forEach(el => {
+    el.style.border = "2px solid var(--shine-black)";
+  });
+}
 
     async function submitEdit() {
-      const row = document.getElementById('edit-row-index').value;
-      const adminName = sessionStorage.getItem('admin_name');
-      
-      const updateData = {
-        name: document.getElementById('m-name').value,
-        gender: document.getElementById('m-gender').value,
-        birthday: document.getElementById('m-birthday').value,
-        phone: document.getElementById('m-phone').value,
-        email: document.getElementById('m-email').value,
-        role: document.getElementById('m-role').value,
-        school: document.getElementById('m-school').value,
-        grade: document.getElementById('m-grade').value,
-        church: document.getElementById('m-church').value,
-        isChristian: document.getElementById('m-isChristian').value,
-        isBaptized: document.getElementById('m-isBaptized').value,
-        iceName: document.getElementById('m-iceName').value,
-        iceRel: document.getElementById('m-iceRel').value,
-        icePhone: document.getElementById('m-icePhone').value,
-        isAttended: document.getElementById('m-isAttended').value,
-        dietary: document.getElementById('m-dietary').value,
-        medical: document.getElementById('m-medical').value,
-        adminNote: document.getElementById('m-adminNote').value
-      };
+  // --- 1. 自動化必填檢查 ---
+  const requiredInputs = document.querySelectorAll('#editModal .v-req');
+  let missingLabels = [];
+  let firstErrorField = null;
 
-      const res = await api({
-        action: 'updateParticipant',
-        token: sessionStorage.getItem('admin_token'),
-        row: row,
-        data: updateData,
-        adminName: adminName
-      });
-
-      if (res && res.success) {
-        alert("✅ 資料已由 " + adminName + " 成功更新！");
-        closeModal();
-        fetchData(); 
-      } else {
-        alert("更新失敗：" + (res ? res.msg : "連線錯誤"));
-      }
+  requiredInputs.forEach(el => {
+    el.style.border = "2px solid var(--shine-black)"; // 恢復原樣
+    const val = el.value ? el.value.trim() : "";
+    if (val === "" || val === "請選擇") {
+      const labelElement = el.closest('.form-group')?.querySelector('label');
+      const labelText = labelElement ? labelElement.innerText.trim() : "未命名欄位";
+      missingLabels.push(labelText);
+      el.style.setProperty('border', '2px solid var(--shine-red)', 'important');
+      if (!firstErrorField) firstErrorField = el;
     }
+  });
+
+  if (missingLabels.length > 0) {
+    alert("⚠️ 請填寫必填欄位：\n• " + missingLabels.join("\n• "));
+    if (firstErrorField) firstErrorField.focus();
+    return;
+  }
+
+  // --- 2. 按鈕狀態切換 ---
+  const saveBtn = document.querySelector('#editModal .btn-next');
+  const originalText = saveBtn.innerText;
+  saveBtn.innerText = "⏳ 儲存中...";
+  saveBtn.disabled = true;
+
+  // --- 3. 封裝資料 ---
+  const row = document.getElementById('edit-row-index').value;
+  const updateData = {
+    name: document.getElementById('m-name').value,
+    gender: document.getElementById('m-gender').value,
+    birthday: document.getElementById('m-birthday').value,
+    phone: document.getElementById('m-phone').value,
+    email: document.getElementById('m-email').value,
+    role: document.getElementById('m-role').value,
+    school: document.getElementById('m-school').value,
+    grade: document.getElementById('m-grade').value,
+    church: document.getElementById('m-church').value,
+    isChristian: document.getElementById('m-isChristian').value,
+    isBaptized: document.getElementById('m-isBaptized').value,
+    iceName: document.getElementById('m-iceName').value,
+    iceRel: document.getElementById('m-iceRel').value,
+    icePhone: document.getElementById('m-icePhone').value,
+    isAttended: document.getElementById('m-isAttended').value,
+    dietary: document.getElementById('m-dietary').value,
+    medical: document.getElementById('m-medical').value,
+    adminNote: document.getElementById('m-adminNote').value
+  };
+
+  // --- 4. 呼叫後端 ---
+  try {
+    const res = await api({
+      action: 'updateParticipant', // 確保這裡對應你後端的 action 名稱
+      token: sessionStorage.getItem('admin_token'),
+      row: row,
+      data: updateData,
+      adminName: sessionStorage.getItem('admin_name')
+    });
+
+    if (res && res.success) {
+      alert("✅ 資料更新成功！");
+      isModalDirty = false;
+      isDirty = false;
+      closeModal();
+      fetchData(); // 重新整理清單
+    } else {
+      alert("❌ 更新失敗：" + (res ? res.msg : "未知錯誤"));
+    }
+  } catch (err) {
+    alert("❌ 系統錯誤：" + err.message);
+  } finally {
+    saveBtn.innerText = originalText;
+    saveBtn.disabled = false;
+  }
+}
   </script>
 </body>
 </html>
