@@ -539,15 +539,20 @@ const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms]))
     
     <div class="card-header">
       <input type="text" 
-             class="room-name-input" 
-             value="${rNo}" 
-             onchange="updateRoomName('${rNo}', this.value)"
-             onclick="event.stopPropagation()"
-             onkeydown="if(event.key==='Enter') this.blur()" 
-             style="font-size:1.2em; font-weight:900; border:1px solid transparent; background:transparent; width:70%;"
-             onfocus="this.style.border='1px solid #ccc'; this.style.background='#fff'"
-             onblur="this.style.border='1px solid transparent'; this.style.background='transparent'"
-      >
+       class="room-name-input" 
+       value="${rNo}" 
+       /* 💡 修正 1：改用 onchange，並傳入 this (元素本身) */
+       onchange="updateRoomName('${rNo}', this.value, this)"
+       
+       onclick="event.stopPropagation()"
+       onkeydown="if(event.key==='Enter') this.blur()" 
+       
+       style="font-size:1.2em; font-weight:900; border:1px solid transparent; background:transparent; width:70%;"
+       onfocus="this.style.border='1px solid #ccc'; this.style.background='#fff'"
+       
+       /* 💡 修正 2：onblur 只負責恢復樣式，不要在裡面放邏輯以免重複觸發 */
+       onblur="this.style.border='1px solid transparent'; this.style.background='transparent'"
+>
       <span class="status-tag">${members.length}/4</span>
     </div>
 
@@ -573,31 +578,45 @@ const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms]))
   roomContainer.innerHTML = roomHtml;
   }
 
-  function updateRoomName(oldName, newName) {
+  function updateRoomName(oldName, newName, element) {
   newName = newName.trim();
-  if (!newName || oldName === newName) return;
+  // 如果名稱沒變或是空白，直接刷回原狀並結束
+  if (!newName || oldName === newName) {
+    renderDormInterface(); 
+    return;
+  }
 
-  // 💡 核心邏輯：直接抓取畫面上所有 input 的值來比對
-  const allCurrentInputs = Array.from(document.querySelectorAll('.room-name-input'));
-  const otherNames = allCurrentInputs
-    .map(input => input.value.trim())
-    .filter(name => name !== oldName); // 排除自己目前的名稱
+  // 1. 核心邏輯：抓取畫面上「除了自己以外」的所有房號
+  const otherNames = Array.from(document.querySelectorAll('.room-name-input'))
+    .filter(input => input !== element) // 💡 關鍵：直接排除掉目前觸發事件的那個 DOM 元素
+    .map(input => input.value.trim());
 
-  // 1. 檢查是否與畫面上其他房間重複
+  // 2. 檢查新名稱是否與其他房間衝突
   if (otherNames.includes(newName)) {
     alert(`❌ 房號「${newName}」在目前清單中已存在！`);
     renderDormInterface(); // 刷回原名
     return;
   }
 
-  // 2. 更新虛擬房間列表
+  // 3. 檢查是否存在於原始資料中 (非必要的二次防護)
+  const isOriginalExist = fullData.some(m => m.room === newName && m.room !== oldName);
+  if (isOriginalExist) {
+    alert(`❌ 房號「${newName}」已在資料庫中使用中！`);
+    renderDormInterface();
+    return;
+  }
+
+  console.log(`[房間改名] 從 ${oldName} 改為 ${newName}`);
+
+  // 4. 更新虛擬房間列表 (virtualRooms)
   const vIdx = virtualRooms.indexOf(oldName);
   if (vIdx !== -1) virtualRooms[vIdx] = newName;
 
-  // 3. 同步更新暫存區 (讓裡面的人跟著搬家)
+  // 5. 同步更新暫存區 (讓房間內的人跟著搬家)
   fullData.forEach(m => {
     const pending = changedRows.get(m.row);
     const currentRoom = (pending && pending.room !== undefined) ? pending.room : m.room;
+    
     if (currentRoom === oldName) {
       changedRows.set(m.row, {
         ...(pending || {}),
@@ -608,14 +627,14 @@ const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms]))
     }
   });
 
-  // 4. 更新當前選取的房間 ID，避免選取框消失
+  // 6. 更新狀態
   if (activeRoom === oldName) activeRoom = newName;
-
   isDirty = true;
-  if (document.getElementById('dorm-save-bar')) {
-    document.getElementById('dorm-save-bar').classList.remove('hidden');
-  }
   
+  const saveBar = document.getElementById('dorm-save-bar');
+  if (saveBar) saveBar.classList.remove('hidden');
+
+  // 7. 重新渲染
   renderDormInterface();
 }
   
@@ -979,12 +998,36 @@ function renderGroupInterface() {
 function setActiveGroup(key) { activeGroup = key; renderGroupInterface(); document.getElementById('group-focus-info').innerText = "目標組別：" + key.split('_BK_')[0]; }
 
 function createNewGroup() {
-  const name = prompt("請輸入新小組名稱：");
-  if (name) {
-    const newKey = name ;
-    virtualGroups.push(newKey);
-    setActiveGroup(newKey);
+  // 1. 取得目前畫面上所有的小組名稱 (包含 input 內正在編輯的)
+  const existingNames = Array.from(
+    document.querySelectorAll('[name="groupName"]')
+  ).map(i => i.value.trim());
+
+  // 2. 自動計算下一個可用名稱 (例如：新小組1, 新小組2...)
+  let i = 1;
+  let newName = `新小組${i}`;
+  while (existingNames.includes(newName) || virtualGroups.includes(newName)) { 
+    i++; 
+    newName = `新小組${i}`; 
   }
+
+  // 3. 加入虛擬小組清單並設為目前選取
+  virtualGroups.unshift(newName); // 使用 unshift 讓新組出現在最前面
+  setActiveGroup(newName);
+
+  // 4. 💡 關鍵體驗：渲染後自動聚焦到該輸入框，讓使用者可以直接改名
+  setTimeout(() => {
+    // 找到剛產生的那個 input (通常是第一個，因為我們用 unshift)
+    const inputs = document.querySelectorAll('[name="groupName"]');
+    if (inputs[0]) { 
+      inputs[0].focus(); 
+      inputs[0].select(); // 自動全選文字，方便使用者直接打字覆蓋
+    }
+  }, 100);
+  
+  // 5. 狀態標記
+  isDirty = true;
+  document.getElementById('group-save-bar')?.classList.remove('hidden');
 }
 
 function clickToAssignGroup(rowId) {
@@ -1045,14 +1088,15 @@ function removeFromGroup(rowId) {
 }
 
 function renameGroup(oldName, newName) {
+  const trimmedNewName = newName.trim();
+  if (!trimmedNewName || oldName === trimmedNewName) return;
+  
   const nameExists = virtualGroups.includes(trimmedNewName);
   if (nameExists && oldName !== trimmedNewName) {
     alert("❌ 此組名已存在，請使用其他名稱。");
     renderGroupInterface(); // 刷回原名
     return;
   }
-  const trimmedNewName = newName.trim();
-  if (!trimmedNewName || oldName === trimmedNewName) return;
 
   console.log(`[重新命名] 從 ${oldName} 改為 ${trimmedNewName}`);
 
@@ -1106,16 +1150,23 @@ function renameGroup(oldName, newName) {
  */
 function renderRoleInterface() {
   const display = document.getElementById('role-management-display');
+  if (!display) return;
+
   const groups = {};
 
-  // 1. 先將成員按組別分類
+  // 1. 先將成員按組別分類 (💡 關鍵修正：分類時就要看暫存組別)
   fullData.forEach(m => {
-    if (m.group && m.group.trim() !== "") {
-      if (!groups[m.group]) groups[m.group] = [];
-      groups[m.group].push(m);
+    const pending = changedRows.get(m.row);
+    // 取得該隊員「當前」所屬組別 (優先看暫存)
+    const currentGroup = (pending && pending.group !== undefined) ? pending.group : m.group;
+
+    if (currentGroup && currentGroup.trim() !== "") {
+      if (!groups[currentGroup]) groups[currentGroup] = [];
+      groups[currentGroup].push(m);
     }
   });
 
+  // 如果暫存過後所有人都沒組別，顯示提示
   if (Object.keys(groups).length === 0) {
     display.innerHTML = `
       <div style="grid-column: 1 / -1; text-align:center; padding:50px; border:2px dashed var(--shine-black);">
@@ -1127,110 +1178,113 @@ function renderRoleInterface() {
   // 2. 渲染邏輯
   display.innerHTML = Object.keys(groups).sort().map(groupName => {
     const gMembers = groups[groupName];
+    
     return `
       <div class="item-card">
         <div class="card-header">
-          <strong style="font-size:1.2em;">${groupName}</strong>
+          <strong style="font-size:1.2em; font-weight:900;">${groupName}</strong>
         </div>
         <div style="flex-grow:1;">
           ${gMembers.map(m => {
-          // 💡 關鍵修正：先看暫存區有沒有這個人的職稱改動
-          const pending = changedRows.get(m.row);
-          const currentRole = (pending && pending.teamRole !== undefined) ? pending.teamRole : m.teamRole; 
-          // 註：請確認你的 fullData 原始職稱欄位是 .role 還是 .teamRole，下面暫統一用 currentRole
+            // 取得該隊員「當前」職稱 (優先看暫存)
+            const pending = changedRows.get(m.row);
+            const currentRole = (pending && pending.teamRole !== undefined) ? pending.teamRole : m.teamRole; 
 
-          const isChief = currentRole === '正隊輔';
-          const isAssistant = currentRole === '副隊輔';
-          const isStudent = !currentRole || currentRole === '' || (currentRole !== '正隊輔' && currentRole !== '副隊輔');
+            const isChief = currentRole === '正隊輔';
+            const isAssistant = currentRole === '副隊輔';
+            const isStudent = !currentRole || currentRole === '';
 
-          return `
-            <div class="member-row" style="padding:10px 0; border-bottom:2px solid #eee;">
-              <span style="font-weight:900; font-size:15px;">${m.name}</span>
-              <div style="display:flex; gap:8px;">
-                <button onclick="toggleRole(${m.row}, '正隊輔')" 
-                  style="cursor:pointer; border:2px solid black; padding:4px 8px; font-weight:900;
-                  background: ${isChief ? '#ffcc00' : 'white'}; 
-                  box-shadow: ${isChief ? 'inset 2px 2px 0px rgba(0,0,0,0.2)' : '2px 2px 0px black'};">
-                  正
-                </button>
-                
-                <button onclick="toggleRole(${m.row}, '副隊輔')" 
-                  style="cursor:pointer; border:2px solid black; padding:4px 8px; font-weight:900;
-                  background: ${isAssistant ? '#00d4ff' : 'white'}; 
-                  box-shadow: ${isAssistant ? 'inset 2px 2px 0px rgba(0,0,0,0.2)' : '2px 2px 0px black'};">
-                  副
-                </button>
-                
-                <button onclick="toggleRole(${m.row}, '')" 
-                  style="cursor:pointer; border:2px solid black; padding:4px 8px; font-weight:900;
-                  background: ${isStudent ? '#eee' : 'white'}; 
-                  color: ${isStudent ? '#888' : 'black'};
-                  box-shadow: ${isStudent ? 'inset 2px 2px 0px rgba(0,0,0,0.1)' : '2px 2px 0px black'};">
-                  員
-                </button>
-              </div>
-            </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-}).join('');
+            return `
+              <div class="member-row" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #eee;">
+                <span style="font-weight:900; font-size:15px;">${m.name}</span>
+                <div style="display:flex; gap:8px;">
+                  <button onclick="toggleRole(${m.row}, '正隊輔')" 
+                    class="role-btn ${isChief ? 'active-chief' : ''}"
+                    style="cursor:pointer; border:2px solid black; padding:4px 8px; font-weight:900;
+                    background: ${isChief ? '#ffcc00' : 'white'}; 
+                    box-shadow: ${isChief ? 'inset 2px 2px 0px rgba(0,0,0,0.2)' : '2px 2px 0px black'};">
+                    正
+                  </button>
+                  
+                  <button onclick="toggleRole(${m.row}, '副隊輔')" 
+                    class="role-btn ${isAssistant ? 'active-assistant' : ''}"
+                    style="cursor:pointer; border:2px solid black; padding:4px 8px; font-weight:900;
+                    background: ${isAssistant ? '#00d4ff' : 'white'}; 
+                    box-shadow: ${isAssistant ? 'inset 2px 2px 0px rgba(0,0,0,0.2)' : '2px 2px 0px black'};">
+                    副
+                  </button>
+                  
+                  <button onclick="toggleRole(${m.row}, '')" 
+                    class="role-btn ${isStudent ? 'active-member' : ''}"
+                    style="cursor:pointer; border:2px solid black; padding:4px 8px; font-weight:900;
+                    background: ${isStudent ? '#eee' : 'white'}; 
+                    color: ${isStudent ? '#888' : 'black'};
+                    box-shadow: ${isStudent ? 'inset 2px 2px 0px rgba(0,0,0,0.1)' : '2px 2px 0px black'};">
+                    員
+                  </button>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function toggleRole(rowId, targetRole) {
   const m = fullData.find(item => item.row === rowId);
   if (!m) return;
 
-  // 💡 修正 1：取得「最即時」的狀態（優先看暫存區）
-  const pending = changedRows.get(rowId);
-  const currentRole = (pending && pending.teamRole !== undefined) ? pending.teamRole : (m.teamRole || "");
+  // 1. 取得該學員「目前最即時」的組別與職稱
+  const pendingSelf = changedRows.get(rowId);
+  const currentGroup = (pendingSelf && pendingSelf.group !== undefined) ? pendingSelf.group : m.group;
+  const currentRole = (pendingSelf && pendingSelf.teamRole !== undefined) ? pendingSelf.teamRole : (m.teamRole || "");
+
+  if (!currentGroup) return alert("該學員尚未分配小組，無法設定職稱。");
 
   let newRole = "";
 
-  // 1. 如果點擊的是目前的身分，代表要「取消」
+  // 2. 切換邏輯
   if (currentRole === targetRole) {
-    newRole = ""; 
+    newRole = ""; // 取消身分
   } 
-  // 2. 切換身分
   else if (targetRole !== "") {
-    // 💡 修正 3：名額檢查也要看「暫存區」才能防重複
-    const groupMembers = fullData.filter(item => item.group === m.group);
-    
-    // 計算該組目前真實的職稱人數（結合原始資料與暫存變更）
+    // 💡 關鍵修正：名額檢查必須針對「目前所在小組」的所有成員
+    // 找出所有「目前」在同一個小組的人（包含剛換組過來的）
     const getRealRoleCount = (roleName) => {
-      return groupMembers.filter(member => {
+      return fullData.filter(member => {
         const p = changedRows.get(member.row);
-        const r = (p && p.teamRole !== undefined) ? p.teamRole : member.teamRole;
-        return r === roleName;
+        const rG = (p && p.group !== undefined) ? p.group : member.group;
+        const rR = (p && p.teamRole !== undefined) ? p.teamRole : member.teamRole;
+        return rG === currentGroup && rR === roleName;
       }).length;
     };
 
     if (targetRole === "正隊輔") {
       if (getRealRoleCount("正隊輔") >= 1) {
-        alert(`⚠️ 【${m.group}】已經有一位正隊輔了！\n請先將原正隊輔設為學員。`);
+        alert(`⚠️ 【${currentGroup}】已經有一位正隊輔了！\n請先將原正隊輔設為學員。`);
         return;
       }
     } 
     else if (targetRole === "副隊輔") {
       if (getRealRoleCount("副隊輔") >= 2) {
-        alert(`⚠️ 【${m.group}】副隊輔已達 2 位上限！`);
+        alert(`⚠️ 【${currentGroup}】副隊輔已達 2 位上限！`);
         return;
       }
     }
     newRole = targetRole;
   }
 
-  // 💡 修正 2：使用 Spread Operator 合併資料，防止分房資訊遺失
+  // 3. 寫入暫存
   changedRows.set(rowId, { 
-    ...(changedRows.get(rowId) || {}), // 保留所有舊變更 (例如房號 room)
+    ...(changedRows.get(rowId) || {}), 
     row: rowId, 
-    group: m.group, 
+    group: currentGroup, // 確保暫存中記錄的是最新的組別
     teamRole: newRole,
-    _type: 'role' // 標記這是一筆職稱變更
+    _type: 'role'
   });
 
   isDirty = true;
-  const saveBar = document.getElementById('role-save-bar');
-  if (saveBar) saveBar.classList.remove('hidden');
+  document.getElementById('role-save-bar')?.classList.remove('hidden');
 
   renderRoleInterface(); 
 }
