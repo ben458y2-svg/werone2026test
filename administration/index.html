@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SHINE 2026 行政總管理系統</title>
+  <title>WE R ONE 2026 報名行政管理後台</title>
   <style>
     /* --- 核心品牌色彩與字體 --- */
     :root {
@@ -65,16 +65,16 @@
   <div id="loading" class="loading-mask hidden">LOADING...</div>
 
   <div id="auth-block" class="container" style="max-width: 500px; margin-top: 80px;">
-    <div class="section-title">ADMIN AUTH</div>
+    <div class="section-title">行政管理後台</div>
     <div class="form-section">
-      <div class="form-group"><label>ACCOUNT</label><input type="text" id="u_name"></div>
-      <div class="form-group"><label>PASSWORD</label><input type="password" id="u_pass"></div>
-      <button class="btn btn-next" style="width:100%; margin-top:10px;" onclick="doLogin()">START SESSION</button>
+      <div class="form-group"><label>帳號</label><input type="text" id="u_name"></div>
+      <div class="form-group"><label>密碼</label><input type="password" id="u_pass"></div>
+      <button class="btn btn-next" style="width:100%; margin-top:10px;" onclick="doLogin()">登入驗證</button>
     </div>
   </div>
 
   <div id="admin-dashboard" class="container hidden">
-    <div class="section-title" id="dashboard-title">ADMIN DASHBOARD</div>
+    <div class="section-title" id="dashboard-title">營會行政後台</div>
     
     <div style="display:flex; gap:10px; margin-bottom:30px; flex-wrap: wrap;">
       <button class="btn btn-next" id="tab-edit" onclick="switchTab('edit')">資料編修</button>
