@@ -272,6 +272,7 @@ async function callApi(action, payload) {
   
   // 1. 在 script 開頭定義變數
   let isDirty = false;
+  let isModalDirty = false; // 💡 新增全域變數
   let currentUser = "";
   let currentPhone = ""; // 新增這行
   let fullData = [];
@@ -390,20 +391,25 @@ async function callApi(action, payload) {
 
   // 4. 切換分頁
   function switchTab(tabName) {
-  // 💡 優化邏輯：強制保護未儲存變動
+  // 💡 修正 1：用 ID 找目前的模組名稱
   if (isDirty) {
-    const activeBtn = document.querySelector('.tab-btn.btn-next');
-    const moduleName = activeBtn ? activeBtn.innerText : "目前功能";
+    const tabNames = { 'edit': '資料修改', 'dorm': '編寢作業', 'group': '編組調整', 'role': '隊輔管理' };
+    // 找出目前哪個 content 是顯示的
+    const activeKey = Object.keys(tabNames).find(k => {
+      const el = document.getElementById('tab-' + k + '-content');
+      return el && !el.classList.contains('hidden');
+    }) || 'edit';
     
-    alert(`⚠️ 尚未儲存變更！\n請先點擊下方的「儲存」按鈕，完成【${moduleName}】的設定後再切換分頁。`);
+    alert(`⚠️ 尚未儲存變更！\n請先點擊下方的「儲存」按鈕，完成【${tabNames[activeKey]}】的設定。`);
     
-    // 視覺引導：讓儲存條晃動一下 (需搭配 CSS)
-    const activeSaveBar = document.querySelector('.save-bar:not(.hidden)');
-    if (activeSaveBar) {
-      activeSaveBar.style.boxShadow = "0 0 20px var(--shine-red)";
-      setTimeout(() => activeSaveBar.style.boxShadow = "", 1000);
+    // 💡 修正 2：用 ID 找儲存條並閃爍
+    const saveBarIds = ['dorm-save-bar', 'group-save-bar', 'role-save-bar'];
+    const activeBar = saveBarIds.map(id => document.getElementById(id)).find(el => el && !el.classList.contains('hidden'));
+    if (activeBar) {
+      activeBar.style.outline = "4px solid var(--shine-red)";
+      setTimeout(() => activeBar.style.outline = "", 1000);
     }
-    return; // 🛑 強力攔截，不讓使用者切換
+    return;
   }
 
   // --- 以下為原本的切換顯示與按鈕樣式邏輯 ---
@@ -808,6 +814,7 @@ function removeFromRoom(row) {
     // 💡 只針對真正的輸入欄位變動才標記 isDirty
     if (e.target.matches('input, select, textarea')) {
       if (!isDirty) {
+        isModalDirty = true; // 標記彈窗有變動
         isDirty = true;
         console.log("偵測到有效欄位變動");
       }
@@ -821,21 +828,32 @@ function removeFromRoom(row) {
 }
 
   function closeModal() {
+  // 💡 修正 1：如果彈窗內有改過資料 (isModalDirty)，關閉前必須詢問
+  if (isModalDirty) {
+    const confirmClose = confirm("⚠️ 您有尚未儲存的編輯內容，確定要關閉嗎？\n(按下確定將放棄本次彈窗內的修改)");
+    if (!confirmClose) return; // 使用者按下取消，留在彈窗內
+  }
+
   // 1. 隱藏彈窗
   document.getElementById('editModal').classList.add('hidden');
-  
-  // 2. 💡 重要：解除髒資料警報
-  // 因為關閉彈窗代表使用者「不存了」或是「取消本次編輯」
-  // 這樣之後 switchTab 就不會再跳出攔截警告
+
+  // 💡 修正 2：狀態重置邏輯
+  // 關閉代表放棄本次彈窗變動，所以彈窗的髒狀態歸零
+  isModalDirty = false; 
+
+  // 只有在「其他分頁 (分組/編寢/職稱) 也沒有變動」的情況下，才解除全域 isDirty
+  // 這樣能確保如果你在「分組」改了東西，進來彈窗看完按關閉，外面的儲存條還會在。
   if (changedRows.size === 0) {
     isDirty = false;
   } 
-  
-  // 3. (選配) 清除必填欄位的紅色邊框遺留樣式
+
+  // 2. 清除必填欄位的樣式遺留 (回覆到您定義的標準樣式)
   const requiredInputs = document.querySelectorAll('#editModal .v-req');
   requiredInputs.forEach(el => {
-    el.style.border = "2px solid black";
+    el.style.border = "2px solid black"; 
   });
+  
+  console.log("彈窗已關閉，暫存狀態已清理");
 }
 
   async function submitEdit(btn) {
@@ -1322,14 +1340,20 @@ function toggleRole(rowId, targetRole) {
 
 // 建議在 HTML 調用時改為：onclick="saveBatchData(this)"
 async function saveBatchData(btnElement) {
-  if (changedRows.size === 0) return alert("尚未偵測到變動。");
-
   // 💡 修正關鍵：先封裝資料，後面的邏輯才能使用 updates
   const updates = Array.from(changedRows.values());
   console.log("準備送出的更新資料:", updates);
+  
+  if (changedRows.size === 0) return alert("尚未偵測到變動。");
 
   // 1. 判定本次變動是否涉及「組別相關」
   const hasGroupChanges = updates.some(u => u._type === 'group' || u.group !== undefined);
+  if (hasGroupChanges) {
+    // 抓取所有小組名稱輸入框 (使用 name="groupName")
+    const groupInputs = document.querySelectorAll('[name="groupName"]');
+    const names = Array.from(groupInputs).map(i => i.value.trim());
+    const filledNames = names.filter(n => n !== "");
+    const dups = filledNames.filter((item, idx) => filledNames.indexOf(item) !== idx);
 
   // 2. 只有在涉及組別變動時，執行重複組名檢查
   if (dups.length > 0) {
