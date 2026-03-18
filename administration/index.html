@@ -186,7 +186,7 @@
       <div class="form-section" style="background: #e3f2fd; border: 3px solid #2196f3;">
   <div class="section-title" style="background: #2196f3; color: white;">💰 財務繳費登記</div>
   <div class="grid-row">
-    <div class="form-group"><label>報名狀態 (30欄)</label>
+    <div class="form-group"><label>報名狀態</label>
       <select id="m-status">
         <option value="尚未繳費">尚未繳費</option>
         <option value="已繳訂金">已繳訂金</option>
@@ -194,9 +194,9 @@
         <option value="已退費">已退費</option>
       </select>
     </div>
-    <div class="form-group"><label>已繳金額 (31欄)</label><input type="number" id="m-paid"></div>
-    <div class="form-group"><label>補助金額 (32欄)</label><input type="number" id="m-subsidy"></div>
-    <div class="form-group"><label>繳費管道 (33欄)</label>
+    <div class="form-group"><label>已繳金額</label><input type="number" id="m-paid"></div>
+    <div class="form-group"><label>補助金額</label><input type="number" id="m-subsidy"></div>
+    <div class="form-group"><label>繳費管道</label>
       <select id="m-payMethod">
         <option value="匯款">匯款</option>
         <option value="現金">現金</option>
@@ -204,9 +204,9 @@
         <option value="其他">其他</option>
       </select>
     </div>
-    <div class="form-group"><label>收款人 (34欄)</label><input type="text" id="m-receiver"></div>
+    <div class="form-group"><label>收款人</label><input type="text" id="m-receiver"></div>
   </div>
-  <div class="form-group"><label>繳費備註 (35欄)</label><input type="text" id="m-payNote"></div>
+  <div class="form-group"><label>繳費備註</label><input type="text" id="m-payNote"></div>
 </div>
       <div style="text-align: center; margin-top: 30px; margin-bottom: 40px;">
         <button class="btn btn-next" onclick="submitEdit()">儲存變更紀錄</button>
@@ -437,9 +437,24 @@
       document.getElementById('m-receiver').value = m.receiver || "";
       document.getElementById('m-payNote').value = m.payNote || "";
 
-      document.getElementById('editModal').classList.remove('hidden');
-      isModalDirty = false;
-      document.querySelectorAll('#editModal .v-req').forEach(el => el.style.border = "2px solid var(--shine-black)");
+      // --- 關鍵：根據分頁顯示/隱藏區塊 ---
+  const allSections = document.querySelectorAll('#modal-fields-container .form-section');
+  const financeSection = document.querySelector('.form-section[style*="background: #e3f2fd"]'); // 藍色背景那個
+  const editTitle = document.querySelector('#editModal h2');
+
+  if (currentTab === 'finance') {
+    // 隱藏非財務的區塊
+    allSections.forEach(sec => sec.classList.add('hidden'));
+    financeSection.classList.remove('hidden');
+    editTitle.innerText = `💰 繳費登記：${m.name}`;
+  } else {
+    // 顯示所有區塊 (資料編修模式)
+    allSections.forEach(sec => sec.classList.remove('hidden'));
+    editTitle.innerText = `📝 編輯詳細資料：${m.name}`;
+  }
+
+  document.getElementById('editModal').classList.remove('hidden');
+  isModalDirty = false;
     }
 
     function attachModalListener() {
