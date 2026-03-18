@@ -65,6 +65,18 @@
     .form-group { margin-bottom: 15px; }
     .grid-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
     .loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+
+    /* 財務專用表格樣式 */
+.finance-table { width: 100%; border-collapse: collapse; background: white; border: 3px solid var(--shine-black); }
+.finance-table th { background: var(--shine-black); color: var(--shine-lime); padding: 12px; text-align: left; }
+.finance-table td { border: 1px solid var(--shine-gray); padding: 10px; font-size: 14px; }
+.finance-table tr:hover { background: #fffde7; cursor: pointer; }
+
+/* 狀態標籤 */
+.badge { padding: 4px 8px; font-weight: 900; font-size: 12px; border: 1px solid black; }
+.bg-red { background: var(--shine-red); color: white; }
+.bg-green { background: var(--shine-lime); color: black; }
+.bg-yellow { background: var(--shine-yellow); color: black; }
   </style>
 </head>
 <body>
@@ -171,7 +183,31 @@
           </div>
         </div>
       </div>
-      
+      <div class="form-section" style="background: #e3f2fd; border: 3px solid #2196f3;">
+  <div class="section-title" style="background: #2196f3; color: white;">💰 財務繳費登記</div>
+  <div class="grid-row">
+    <div class="form-group"><label>報名狀態 (30欄)</label>
+      <select id="m-status">
+        <option value="尚未繳費">尚未繳費</option>
+        <option value="已繳訂金">已繳訂金</option>
+        <option value="已繳全額">已繳全額</option>
+        <option value="已退費">已退費</option>
+      </select>
+    </div>
+    <div class="form-group"><label>已繳金額 (31欄)</label><input type="number" id="m-paid"></div>
+    <div class="form-group"><label>補助金額 (32欄)</label><input type="number" id="m-subsidy"></div>
+    <div class="form-group"><label>繳費管道 (33欄)</label>
+      <select id="m-payMethod">
+        <option value="匯款">匯款</option>
+        <option value="現金">現金</option>
+        <option value="現場繳費">現場繳費</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <div class="form-group"><label>收款人 (34欄)</label><input type="text" id="m-receiver"></div>
+  </div>
+  <div class="form-group"><label>繳費備註 (35欄)</label><input type="text" id="m-payNote"></div>
+</div>
       <div style="text-align: center; margin-top: 30px; margin-bottom: 40px;">
         <button class="btn btn-next" onclick="submitEdit()">儲存變更紀錄</button>
       </div>
@@ -179,7 +215,7 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbymmbyXfEa3ypp46qXCIOp3vJK8CHiCyqcVEP2AKDPlt7hzcO0xXSB7LdNCIK_gvJBX/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbz8BSGbVCb100a8YVEVgfSkHqiP86MfAUG8Zu1Cs78HIcbYnbwER6-s_DAEjufXaM1W/exec"; 
     let fullData = [];
     let currentTab = 'edit';
     let searchTimer;
@@ -254,29 +290,60 @@
     }
 
     function renderList(data) {
-      const container = document.getElementById('section-list');
-      container.innerHTML = data.map(m => {
-        const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
-        return `
-          <div class="item-card" onclick="openAction(${m.row})">
-            <div style="display:flex; justify-content:space-between;">
-              <strong>${m.name}</strong>
-              <span style="font-size:11px; background:#000; color:#0f7; padding:2px 5px;">${m.status || '已報名'}</span>
-            </div>
-            <div style="font-size:13px; margin-top:8px;">
-              <div>${m.church || '尚未填寫教會'}</div>
-              <div style="color:#666;">${m.phone}</div>
-              <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #ccc; font-weight:bold;">
-                ${currentTab === 'finance' ? 
-                  `<span style="color:${balance <= 0 ? 'green' : 'red'}">應收餘額：${balance}</span>` : 
-                  `<span style="color:#888;">身份：${m.role}</span>`
-                }
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
+  const container = document.getElementById('section-list');
+  
+  // 如果是繳費登記分頁，使用表格顯示
+  if (currentTab === 'finance') {
+    let html = `
+      <table class="finance-table">
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>狀態</th>
+            <th>應收</th>
+            <th>已繳</th>
+            <th>補助</th>
+            <th>餘額</th>
+            <th>最後更新</th>
+          </tr>
+        </thead>
+        <tbody>`;
+    
+    data.forEach(m => {
+      const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
+      const statusClass = balance <= 0 ? 'bg-green' : (m.paid > 0 ? 'bg-yellow' : 'bg-red');
+      
+      html += `
+        <tr onclick="openAction(${m.row})">
+          <td><strong>${m.name}</strong><br><small>${m.church || ''}</small></td>
+          <td><span class="badge ${m.status === '已繳全額' ? 'bg-green' : 'bg-yellow'}">${m.status || '待處理'}</span></td>
+          <td>${m.totalDue}</td>
+          <td style="color:blue; font-weight:bold;">${m.paid}</td>
+          <td>${m.subsidy}</td>
+          <td style="color:${balance > 0 ? 'red' : 'green'}; font-weight:bold;">${balance}</td>
+          <td style="font-size:11px; color:#666;">${m.lastUpdate || '-'}</td>
+        </tr>`;
+    });
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+    container.style.display = 'block'; // 確保表格佔滿寬度
+  } 
+  // 如果是資料編修，維持卡片顯示
+  else {
+    container.innerHTML = data.map(m => `
+      <div class="item-card" onclick="openAction(${m.row})">
+        <div style="display:flex; justify-content:space-between;">
+          <strong>${m.name}</strong>
+          <span class="badge bg-green">${m.role}</span>
+        </div>
+        <div style="font-size:13px; margin-top:8px;">
+          <div>${m.church || '未填教會'}</div>
+          <div style="color:#666;">${m.phone}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
 
     // --- 報名現況統計 ---
     async function refreshStats() {
@@ -363,6 +430,13 @@
       document.getElementById('m-medical').value = m.medical || "";
       document.getElementById('m-adminNote').value = m.adminNote || "";
 
+      document.getElementById('m-status').value = m.status || "尚未繳費";
+      document.getElementById('m-paid').value = m.paid || 0;
+      document.getElementById('m-subsidy').value = m.subsidy || 0;
+      document.getElementById('m-payMethod').value = m.payMethod || "匯款";
+      document.getElementById('m-receiver').value = m.receiver || "";
+      document.getElementById('m-payNote').value = m.payNote || "";
+
       document.getElementById('editModal').classList.remove('hidden');
       isModalDirty = false;
       document.querySelectorAll('#editModal .v-req').forEach(el => el.style.border = "2px solid var(--shine-black)");
@@ -414,6 +488,13 @@
         isAttended: document.getElementById('m-isAttended').value,
         dietary: document.getElementById('m-dietary').value,
         medical: document.getElementById('m-medical').value,
+        adminNote: document.getElementById('m-adminNote').value
+        status: document.getElementById('m-status').value,
+        paid: document.getElementById('m-paid').value,
+        subsidy: document.getElementById('m-subsidy').value,
+        payMethod: document.getElementById('m-payMethod').value,
+        receiver: document.getElementById('m-receiver').value,
+        payNote: document.getElementById('m-payNote').value,
         adminNote: document.getElementById('m-adminNote').value
       };
 
