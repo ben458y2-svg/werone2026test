@@ -166,7 +166,7 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyU-0hGCUkmmu_YGTF80KVLVKZ-hwJUPgGRpz55XRrcH6z8YcVnvdNVDjfnQ9M3NvRL/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwJ4kzDiHHDPY47DrqZjt31NTkRBQTqE-3vdQLxYM9osJjnp-hG1WCTGhgvJ30urmXp/exec"; 
     let fullData = [];
     let currentTab = 'edit';
 
@@ -181,16 +181,22 @@
     }
 
     async function doLogin() {
-      const u = document.getElementById('u_name').value;
-      const p = document.getElementById('u_pass').value;
-      const res = await api({ action: 'login', username: u, password: p });
-      if (res.success) {
-        sessionStorage.setItem('admin_token', res.token);
-        document.getElementById('auth-block').classList.add('hidden');
-        document.getElementById('admin-dashboard').classList.remove('hidden');
-        fetchData();
-      } else { alert("驗證失敗"); }
-    }
+  const u = document.getElementById('u_name').value;
+  const p = document.getElementById('u_pass').value;
+  const res = await api({ action: 'login', username: u, password: p });
+  
+  if (res.success) {
+    sessionStorage.setItem('admin_token', res.token);
+    // 核心：存入登入者姓名
+    sessionStorage.setItem('admin_name', res.userName); 
+    
+    document.getElementById('auth-block').classList.add('hidden');
+    document.getElementById('admin-dashboard').classList.remove('hidden');
+    fetchData();
+  } else {
+    alert("驗證失敗：" + res.msg);
+  }
+}
 
     async function fetchData() {
       const res = await api({ action: 'fetchAllData', token: sessionStorage.getItem('admin_token') });
@@ -200,6 +206,11 @@
       }
     }
 
+    function showAdminInfo() {
+  const name = sessionStorage.getItem('admin_name');
+  const dashboardTitle = document.querySelector('#admin-dashboard .section-title');
+  dashboardTitle.innerHTML = `ADMIN DASHBOARD - <span style="color:white">${name}</span>`;
+}
     function switchTab(tab) {
       currentTab = tab;
       document.getElementById('tab-edit').className = 'btn' + (tab==='edit'?' btn-next':'');
@@ -221,30 +232,59 @@
     }
 
     function renderList(data) {
-      const container = document.getElementById('member-list-container');
-      container.innerHTML = data.map(m => {
-        const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
-        return `
-          <div class="item-card" onclick="openAction(${m.row})">
-            <div class="card-header">
-              <strong style="font-size:1.1em;">${m.name}</strong>
-              <span class="status-tag">${m.role}</span>
-            </div>
-            <div style="font-size:14px; font-weight:700;">
-              <div>${m.church || '無教會資訊'}</div>
-              <div style="margin-top:5px; color:#666;">${m.phone}</div>
-              ${currentTab === 'finance' ? `
-                <div style="margin-top:10px; border-top:1px dashed black; padding-top:10px; color:${balance <= 0 ? 'green' : 'var(--shine-red)'};">
-                  ${balance <= 0 ? '● 已結清' : '○ 欠費：' + balance}
-                </div>
-              ` : ''}
-            </div>
+  const container = document.getElementById('member-list-container');
+  container.innerHTML = data.map(m => {
+    // 計算剩餘應繳
+    const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
+    
+    return `
+      <div class="item-card" onclick="openAction(${m.row})">
+        <div class="card-header">
+          <strong style="font-size:1.1em;">${m.name}</strong>
+          <span class="status-tag">${m.status || '已報名'}</span>
+        </div>
+        <div style="font-size:13px; font-weight:700;">
+          <div>${m.church}</div>
+          <div style="color:#666; margin-top:4px;">${m.phone}</div>
+          
+          <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;">
+            ${currentTab === 'finance' ? 
+              `<span style="color:${balance <= 0 ? 'green' : 'var(--shine-red)'}">餘額：${balance}</span>` : 
+              `<span style="color:#999; font-size:11px;">最後更新：${m.lastUpdate || '無紀錄'}</span>`
+            }
           </div>
-        `;
-      }).join('');
-    }
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 
     function closeModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+    async function submitEdit() {
+  const row = document.getElementById('edit-row-index').value;
+  const adminName = sessionStorage.getItem('admin_name'); // 從 Session 抓姓名
+  
+  const updateData = {
+    name: document.getElementById('m-name').value,
+    // ... (其他個資欄位) ...
+    adminNote: document.getElementById('m-adminNote').value
+  };
+
+  const res = await api({
+    action: 'updateParticipant',
+    token: sessionStorage.getItem('admin_token'),
+    row: row,
+    data: updateData,
+    adminName: adminName // 傳給後端
+  });
+
+  if (res.success) {
+    alert("✅ 資料已由 " + adminName + " 成功更新！");
+    closeModal();
+    fetchData(); 
+  }
+}
     
     function openAction(rowId) {
        // 根據 Tab 決定行為... 
