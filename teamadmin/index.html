@@ -249,6 +249,67 @@
       outline: 4px solid var(--shine-red) !important;
       border-color: var(--shine-red) !important;
     }
+    /* =========================================
+   修正：成員資料彈窗專用排版
+   ========================================= */
+
+/* 1. 調整彈窗背景與捲動行為 */
+#editModal {
+  padding: 40px 10px !important; /* 增加上下留白，避免貼齊邊緣 */
+}
+
+/* 2. 彈窗內的 container：縮小寬度使其更像對話框 */
+#editModal > .container {
+  max-width: 900px !important;
+  border: 4px solid var(--shine-black) !important;
+  background: var(--shine-bg) !important;
+  box-shadow: 20px 20px 0px var(--shine-black) !important;
+  padding: 30px !important;
+}
+
+/* 3. 核心：找回一排兩欄 (grid-row) */
+#editModal .grid-row {
+  display: grid !important;
+  /* 強制設定為兩欄，除非螢幕太小 */
+  grid-template-columns: repeat(2, 1fr) !important; 
+  gap: 15px 25px !important; /* 垂直 15px, 水平 25px */
+}
+
+/* 4. 針對「營會行政」最後一個長欄位的修正 */
+/* 你的 HTML 裡有寫 grid-column: 1 / -1，這裡補強確保它佔滿兩欄 */
+#editModal .form-group[style*="grid-column: 1 / -1"] {
+  grid-column: span 2 !important;
+}
+
+/* 5. 標題與間距微調 */
+#editModal h2 {
+  margin-bottom: 40px;
+  font-size: 1.8em;
+  border-bottom: 4px double var(--shine-black);
+  padding-bottom: 10px;
+}
+
+#editModal .form-section {
+  margin-bottom: 40px !important;
+  position: relative;
+}
+
+/* 讓手機版自動變回一欄 */
+@media (max-width: 700px) {
+  #editModal .grid-row {
+    grid-template-columns: 1fr !important;
+  }
+  #editModal .form-group[style*="grid-column: 1 / -1"] {
+    grid-column: span 1 !important;
+  }
+}
+
+/* 必填欄位的小紅邊框提示 */
+#editModal .v-req:focus {
+  border-color: var(--shine-lime);
+  outline: none;
+  box-shadow: 4px 4px 0px var(--shine-black);
+}
 </style>
 </head>
 <body>
