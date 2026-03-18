@@ -15,7 +15,6 @@
     
     body { font-family: "Inter", "Noto Sans TC", sans-serif; background-color: #f0f0f0; margin: 0; padding: 10px; }
 
-    /* --- 容器與區塊樣式 --- */
     .container {
       max-width: 1300px; margin: 20px auto; background: var(--shine-bg);
       padding: clamp(20px, 4vw, 40px); border: 3px solid var(--shine-black);
@@ -31,7 +30,6 @@
       margin-top: -35px; border: 2px solid var(--shine-black); box-shadow: 4px 4px 0px var(--shine-lime);
     }
 
-    /* --- 按鈕與輸入框 --- */
     .btn { 
       padding: 12px 25px; font-weight: 900; border: 2px solid var(--shine-black); 
       cursor: pointer; display: inline-flex; align-items: center; justify-content: center; 
@@ -43,16 +41,14 @@
     .btn-next:hover { background: var(--shine-lime); color: var(--shine-black); box-shadow: 6px 6px 0px var(--shine-black); transform: translate(-3px, -3px); }
 
     input, select, textarea { border: 2px solid var(--shine-black); padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-top: 5px; }
-    label { font-weight: 900; background: var(--shine-lime); padding: 2px 10px; display: inline-block; }
+    label { font-weight: 900; background: var(--shine-lime); padding: 2px 10px; display: inline-block; cursor: pointer; }
 
-    /* --- 列表卡片樣式 --- */
     .grid-display-area { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; align-content: start; }
     .item-card { background: var(--shine-bg); border: 3px solid var(--shine-black); padding: 15px; cursor: pointer; transition: all 0.1s ease; position: relative; display: flex; flex-direction: column; text-align: left; }
     .item-card:hover { transform: translate(-4px, -4px); box-shadow: 8px 8px 0px var(--shine-black); }
     .card-header { border-bottom: 2px solid var(--shine-black); padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
     .status-tag { font-size: 11px; padding: 2px 6px; font-weight: 900; background: var(--shine-black); color: var(--shine-lime); }
 
-    /* --- 工具類 --- */
     .hidden { display: none !important; }
     .form-group { margin-bottom: 15px; }
     .grid-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
@@ -62,13 +58,13 @@
 </head>
 <body>
 
-  <div id="loading" class="loading-mask hidden">LOADING...</div>
+  <div id="loading" class="loading-mask hidden">處理中 (PROCESSING)...</div>
 
   <div id="auth-block" class="container" style="max-width: 500px; margin-top: 80px;">
     <div class="section-title">行政管理後台</div>
     <div class="form-section">
-      <div class="form-group"><label>帳號</label><input type="text" id="u_name"></div>
-      <div class="form-group"><label>密碼</label><input type="password" id="u_pass"></div>
+      <div class="form-group"><label for="u_name">帳號</label><input type="text" id="u_name"></div>
+      <div class="form-group"><label for="u_pass">密碼</label><input type="password" id="u_pass"></div>
       <button class="btn btn-next" style="width:100%; margin-top:10px;" onclick="doLogin()">登入驗證</button>
     </div>
   </div>
@@ -85,8 +81,8 @@
       <div class="section-title">快速檢索</div>
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px;">
         <div>
-          <label>關鍵字搜尋</label>
-          <input type="text" id="search-input" placeholder="搜尋姓氏、電話、教會..." oninput="handleSearch()">
+          <label for="search-input">關鍵字搜尋</label>
+          <input type="text" id="search-input" placeholder="搜尋姓名、電話、教會..." oninput="handleSearch()">
         </div>
         <div>
           <label>目前筆數</label>
@@ -108,53 +104,54 @@
         <div class="form-section">
           <div class="section-title">個人資料</div>
           <div class="grid-row">
-            <div class="form-group"><label>姓名</label><input type="text" id="m-name"></div>
-            <div class="form-group"><label>性別</label><select id="m-gender"><option>男</option><option>女</option></select></div>
-            <div class="form-group"><label>生日</label><input type="date" id="m-birthday"></div>
-            <div class="form-group"><label>手機</label><input type="tel" id="m-phone"></div>
-            <div class="form-group"><label>電子郵件</label><input type="email" id="m-email"></div>
+            <div class="form-group"><label for="m-name">姓名</label><input type="text" id="m-name"></div>
+            <div class="form-group"><label for="m-gender">性別</label><select id="m-gender"><option>男</option><option>女</option></select></div>
+            <div class="form-group"><label for="m-birthday">生日</label><input type="date" id="m-birthday"></div>
+            <div class="form-group"><label for="m-phone">手機</label><input type="tel" id="m-phone"></div>
+            <div class="form-group"><label for="m-email">電子郵件</label><input type="email" id="m-email"></div>
           </div>
         </div>
 
         <div class="form-section">
-        <div class="section-title">參與身分</div>
-        <div class="grid-row">
-          <div class="form-group"><label>報名身分</label><select id="m-role" class="v-req"><option>國中</option><option>高中職</option><option>大專</option><option>社青</option><option>傳道</option><option>牧師</option></select></div>
-          <div class="form-group"><label>就讀學校</label><input type="text" id="m-school" class="v-req"></div>
-          <div class="form-group"><label>升上年級</label><input type="text" id="m-grade" class="v-req"></div>
-          <div class="form-group"><label>所屬教會</label><input type="text" id="m-church" class="v-req"></div>
-          <div class="form-group"><label>是否為基督徒</label><select id="m-isChristian" class="v-req"><option>是</option><option>否</option></select></div>
-          <div class="form-group"><label>是否已受洗</label><select id="m-isBaptized" class="v-req"><option>是</option><option>否</option></select></div>
+          <div class="section-title">參與身分</div>
+          <div class="grid-row">
+            <div class="form-group"><label for="m-role">報名身分</label><select id="m-role"><option>國中</option><option>高中職</option><option>大專</option><option>社青</option><option>傳道</option><option>牧師</option></select></div>
+            <div class="form-group"><label for="m-school">就讀學校</label><input type="text" id="m-school"></div>
+            <div class="form-group"><label for="m-grade">升上年級</label><input type="text" id="m-grade"></div>
+            <div class="form-group"><label for="m-church">所屬教會</label><input type="text" id="m-church"></div>
+            <div class="form-group"><label for="m-isChristian">是否為基督徒</label><select id="m-isChristian"><option>是</option><option>否</option></select></div>
+            <div class="form-group"><label for="m-isBaptized">是否已受洗</label><select id="m-isBaptized"><option>是</option><option>否</option></select></div>
+          </div>
         </div>
-      </div>
 
-      <div class="form-section">
-        <div class="section-title">緊急聯絡人</div>
-        <div class="grid-row">
-          <div class="form-group"><label>緊急聯絡人</label><input type="text" id="m-iceName" class="v-req"></div>
-          <div class="form-group"><label>緊急連絡人關係</label><input type="text" id="m-iceRel" class="v-req"></div>
-          <div class="form-group"><label>緊急聯絡人電話</label><input type="tel" id="m-icePhone" maxlength="11" oninput="formatPhone(this)" class="v-req"></div>
+        <div class="form-section">
+          <div class="section-title">緊急聯絡人</div>
+          <div class="grid-row">
+            <div class="form-group"><label for="m-iceName">緊急聯絡人</label><input type="text" id="m-iceName"></div>
+            <div class="form-group"><label for="m-iceRel">緊急連絡人關係</label><input type="text" id="m-iceRel"></div>
+            <div class="form-group"><label for="m-icePhone">緊急聯絡人電話</label><input type="tel" id="m-icePhone"></div>
+          </div>
         </div>
-      </div>
 
-      <div class="form-section">
-        <div class="section-title">營會行政</div>
-        <div class="grid-row">
-          <div class="form-group"><label>曾參加SHINE營會</label><select id="m-isAttended" class="v-req"><option>是</option><option>否</option></select></div>
-          <div class="form-group"><label>飲食需求</label><select id="m-dietary" class="v-req"><option>葷食</option><option>蛋奶素</option><option>純素</option></select></div>
-          <div class="form-group" style="grid-column: 1 / -1;"><label>特殊狀況與注意事項</label><input type="text" id="m-medical" class="v-req"></div>
+        <div class="form-section">
+          <div class="section-title">營會行政</div>
+          <div class="grid-row">
+            <div class="form-group"><label for="m-isAttended">曾參加SHINE營會</label><select id="m-isAttended"><option>是</option><option>否</option></select></div>
+            <div class="form-group"><label for="m-dietary">飲食需求</label><select id="m-dietary"><option>葷食</option><option>蛋奶素</option><option>純素</option></select></div>
+            <div class="form-group" style="grid-column: 1 / -1;"><label for="m-medical">特殊狀況與注意事項</label><input type="text" id="m-medical"></div>
+          </div>
         </div>
 
         <div class="form-section" style="background: #fff9c4; border: 3px solid var(--shine-yellow);">
           <div class="section-title" style="background: var(--shine-yellow); color: black;">資料異動</div>
           <div class="form-group">
-            <label style="background: var(--shine-yellow);">資料更新備註 (行政後台)</label>
+            <label for="m-adminNote" style="background: var(--shine-yellow);">資料更新備註 (行政後台)</label>
             <textarea id="m-adminNote" style="height: 80px;"></textarea>
           </div>
         </div>
       </div>
       
-      <div style="text-align: center; margin-top: 30px;">
+      <div style="text-align: center; margin-top: 30px; margin-bottom: 40px;">
         <button class="btn btn-next" onclick="submitEdit()">儲存變更紀錄</button>
       </div>
     </div>
@@ -164,12 +161,15 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwJ4kzDiHHDPY47DrqZjt31NTkRBQTqE-3vdQLxYM9osJjnp-hG1WCTGhgvJ30urmXp/exec"; 
     let fullData = [];
     let currentTab = 'edit';
+    let searchTimer;
 
     async function api(payload) {
       document.getElementById('loading').classList.remove('hidden');
       try {
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
         return await res.json();
+      } catch(e) {
+        alert("連線超時或錯誤，請重新整理");
       } finally {
         document.getElementById('loading').classList.add('hidden');
       }
@@ -179,29 +179,26 @@
       const u = document.getElementById('u_name').value;
       const p = document.getElementById('u_pass').value;
       const res = await api({ action: 'login', username: u, password: p });
-      
-      if (res.success) {
+      if (res && res.success) {
         sessionStorage.setItem('admin_token', res.token);
         sessionStorage.setItem('admin_name', res.userName); 
-        
         document.getElementById('auth-block').classList.add('hidden');
         document.getElementById('admin-dashboard').classList.remove('hidden');
         showAdminInfo();
         fetchData();
       } else {
-        alert("驗證失敗：" + res.msg);
+        alert("驗證失敗：" + (res ? res.msg : "未知錯誤"));
       }
     }
 
     function showAdminInfo() {
       const name = sessionStorage.getItem('admin_name');
-      const title = document.getElementById('dashboard-title');
-      title.innerHTML = `ADMIN DASHBOARD - <span style="color:white">${name}</span>`;
+      document.getElementById('dashboard-title').innerHTML = `ADMIN DASHBOARD - <span style="color:white">${name}</span>`;
     }
 
     async function fetchData() {
       const res = await api({ action: 'fetchAllData', token: sessionStorage.getItem('admin_token') });
-      if (res.success) {
+      if (res && res.success) {
         fullData = res.data;
         handleSearch();
       }
@@ -214,17 +211,19 @@
       handleSearch();
     }
 
+    // 效能優化：增加防抖動，避免輸入時卡頓
     function handleSearch() {
-      const key = document.getElementById('search-input').value.toLowerCase();
-      const filtered = fullData.filter(m => 
-        (m.name && m.name.toLowerCase().includes(key)) ||
-        (m.phone && m.phone.includes(key)) ||
-        (m.church && m.church.toLowerCase().includes(key))
-      );
-      
-      const displayData = filtered.slice(0, 50);
-      document.getElementById('stats-count').innerText = `${displayData.length} / ${filtered.length}`;
-      renderList(displayData);
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        const key = document.getElementById('search-input').value.toLowerCase();
+        const filtered = fullData.filter(m => 
+          (m.name && m.name.toLowerCase().includes(key)) ||
+          (m.phone && m.phone.includes(key)) ||
+          (m.church && m.church.toLowerCase().includes(key))
+        );
+        document.getElementById('stats-count').innerText = `${filtered.length} 筆`;
+        renderList(filtered.slice(0, 80)); // 限制渲染筆數提升效能
+      }, 250);
     }
 
     function renderList(data) {
@@ -238,7 +237,7 @@
               <span class="status-tag">${m.status || '已報名'}</span>
             </div>
             <div style="font-size:13px; font-weight:700;">
-              <div>${m.church}</div>
+              <div>${m.church || '無教會資訊'}</div>
               <div style="color:#666; margin-top:4px;">${m.phone}</div>
               <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;">
                 ${currentTab === 'finance' ? 
@@ -256,7 +255,6 @@
       const m = fullData.find(item => item.row === rowId);
       if (!m) return;
 
-      // 填入 Modal 內容
       document.getElementById('edit-row-index').value = m.row;
       document.getElementById('m-name').value = m.name || "";
       document.getElementById('m-gender').value = m.gender || "男";
@@ -267,6 +265,14 @@
       document.getElementById('m-school').value = m.school || "";
       document.getElementById('m-grade').value = m.grade || "";
       document.getElementById('m-church').value = m.church || "";
+      document.getElementById('m-isChristian').value = m.isChristian || "是";
+      document.getElementById('m-isBaptized').value = m.isBaptized || "是";
+      document.getElementById('m-iceName').value = m.iceName || "";
+      document.getElementById('m-iceRel').value = m.iceRel || "";
+      document.getElementById('m-icePhone').value = m.icePhone || "";
+      document.getElementById('m-isAttended').value = m.isAttended || "否";
+      document.getElementById('m-dietary').value = m.dietary || "葷食";
+      document.getElementById('m-medical').value = m.medical || "";
       document.getElementById('m-adminNote').value = m.adminNote || "";
 
       document.getElementById('editModal').classList.remove('hidden');
@@ -288,6 +294,14 @@
         school: document.getElementById('m-school').value,
         grade: document.getElementById('m-grade').value,
         church: document.getElementById('m-church').value,
+        isChristian: document.getElementById('m-isChristian').value,
+        isBaptized: document.getElementById('m-isBaptized').value,
+        iceName: document.getElementById('m-iceName').value,
+        iceRel: document.getElementById('m-iceRel').value,
+        icePhone: document.getElementById('m-icePhone').value,
+        isAttended: document.getElementById('m-isAttended').value,
+        dietary: document.getElementById('m-dietary').value,
+        medical: document.getElementById('m-medical').value,
         adminNote: document.getElementById('m-adminNote').value
       };
 
@@ -299,12 +313,12 @@
         adminName: adminName
       });
 
-      if (res.success) {
+      if (res && res.success) {
         alert("✅ 資料已由 " + adminName + " 成功更新！");
         closeModal();
         fetchData(); 
       } else {
-        alert("更新失敗：" + res.msg);
+        alert("更新失敗：" + (res ? res.msg : "連線錯誤"));
       }
     }
   </script>
