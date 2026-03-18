@@ -386,28 +386,56 @@ async function callApi(action, payload) {
 
   // 4. 切換分頁
   function switchTab(tabName) {
-  // 1. 切換內容顯示 (增加 tab-role-content)
-  document.getElementById('tab-edit-content').classList.toggle('hidden', tabName !== 'edit');
-  document.getElementById('tab-group-content').classList.toggle('hidden', tabName !== 'group');
-  document.getElementById('tab-role-content').classList.toggle('hidden', tabName !== 'role');
-  document.getElementById('tab-dorm-content').classList.toggle('hidden', tabName !== 'dorm');
+  // 💡 核心邏輯：如果目前有未儲存的變動 (isDirty)
+  if (isDirty) {
+    const confirmMessage = "⚠️ 您有尚未儲存的變更！\n\n「切換分頁」會清空目前分頁的所有暫存變動。\n\n• 按下「確定」：放棄變更並切換分頁\n• 按下「取消」：留在原分頁 (請記得點擊下方的儲存按鈕)";
+    
+    if (!confirm(confirmMessage)) {
+      return; // 🛑 攔截：使用者按下取消，留在原地
+    } else {
+      // 💡 使用者選擇「確定」放棄：重設狀態
+      changedRows.clear();
+      isDirty = false;
+      // 隱藏所有分頁的儲存條 (save-bar)
+      const saveBars = ['group-save-bar', 'dorm-save-bar', 'role-save-bar'];
+      saveBars.forEach(id => {
+        const bar = document.getElementById(id);
+        if (bar) bar.classList.add('hidden');
+      });
+    }
+  }
 
-  // 2. 切換按鈕樣式 (亮起目前的標籤，增加 role)
+  // --- 以下為原本的切換顯示與按鈕樣式邏輯 ---
+  
+  // 1. 切換內容顯示
+  const contentIds = {
+    'edit': 'tab-edit-content',
+    'group': 'tab-group-content',
+    'role': 'tab-role-content',
+    'dorm': 'tab-dorm-content'
+  };
+  
+  Object.keys(contentIds).forEach(key => {
+    const el = document.getElementById(contentIds[key]);
+    if (el) el.classList.toggle('hidden', key !== tabName);
+  });
+
+  // 2. 切換按鈕樣式
   const tabs = ['edit', 'group', 'role', 'dorm'];
   tabs.forEach(t => {
     const btn = document.getElementById(`btn-tab-${t}`);
     if (btn) {
       if (t === tabName) {
-        btn.classList.add('btn-next'); // 變黑色背景
+        btn.classList.add('btn-next'); // 黑色背景
       } else {
-        btn.classList.remove('btn-next'); // 變白色背景
+        btn.classList.remove('btn-next'); // 白色背景
       }
     }
   });
 
-  // 3. 切換分頁時，如果進入編組、職稱或編寢，重新渲染介面以確保資料最新
+  // 3. 重新渲染介面
   if (tabName === 'group') renderGroupInterface();
-  if (tabName === 'role') renderRoleInterface(); // 點擊時自動刷新職稱管理介面
+  if (tabName === 'role') renderRoleInterface();
   if (tabName === 'dorm') renderDormInterface();
 }
 
@@ -714,9 +742,40 @@ function removeFromRoom(row) {
     document.getElementById('m-dietary').value = m.dietary || "";
     document.getElementById('m-medical').value = m.medical || "";
     document.getElementById('editModal').classList.remove('hidden');
+
+    // 2. 💡 新增：自動監聽改動
+    // 取得彈窗內所有的輸入控制項
+    const inputs = document.querySelectorAll('#editModal input, #editModal select, #editModal textarea');
+  
+    inputs.forEach(el => {
+    // 使用 input 事件 (即時觸發) 或 change 事件 (失去焦點觸發)
+    el.addEventListener('input', () => {
+      if (!isDirty) {
+        isDirty = true;
+        console.log("偵測到個人資料變動，防誤觸攔截已啟動");
+      }
+    }, { once: true }); // 每個欄位只需要監聽第一次變動即可
+  });
+
+  // 3. 顯示彈窗
+  document.getElementById('editModal').classList.remove('hidden');
   }
 
-  function closeModal() { document.getElementById('editModal').classList.add('hidden'); }
+  function closeModal() {
+  // 1. 隱藏彈窗
+  document.getElementById('editModal').classList.add('hidden');
+  
+  // 2. 💡 重要：解除髒資料警報
+  // 因為關閉彈窗代表使用者「不存了」或是「取消本次編輯」
+  // 這樣之後 switchTab 就不會再跳出攔截警告
+  isDirty = false; 
+  
+  // 3. (選配) 清除必填欄位的紅色邊框遺留樣式
+  const requiredInputs = document.querySelectorAll('#editModal .v-req');
+  requiredInputs.forEach(el => {
+    el.style.border = "2px solid black";
+  });
+}
 
   async function submitEdit(btn) {
   // --- 🚀 自動化必填檢查開始 ---
@@ -797,6 +856,9 @@ function removeFromRoom(row) {
     });
 
     alert("✅ 資料更新成功！");
+    // 💡 關鍵修正：儲存成功，清除髒資料標記
+    isDirty = false;
+    
     closeModal();
     // 更新成功後，重新從後端抓取最新資料以同步前端
     await loadAllData(); 
