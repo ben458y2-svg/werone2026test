@@ -252,7 +252,7 @@
         </div>
       </div>
 
-      <div style="text-align: center;"><button class="btn btn-next" onclick="submitEdit()">確認儲存修改</button></div>
+      <div style="text-align: center;"><button class="btn btn-next" onclick="submitEdit(this)">確認儲存修改</button></div>
     </div>
   </div>
 
@@ -350,33 +350,40 @@ async function callApi(action, payload) {
   if (container) container.innerHTML = "⏳ 正在從雲端同步資料，請稍候...";
 
   try {
-    // 1. 取得儲存在變數或 sessionStorage 中的驗證資訊
-    // 建議在 handleAuth 成功時，就把這兩個值存好
-    const name = currentUser; 
-    const phone = currentPhone; 
+    // 💡 關鍵修正：優先從 sessionStorage 抓取，確保「重新整理」後仍能自動同步
+    const name = sessionStorage.getItem('adminName') || currentUser; 
+    const phone = sessionStorage.getItem('adminPhone') || currentPhone; 
 
-    // 2. 呼叫 API (務必帶上兩把鑰匙)
+    // 安全檢查：如果兩者皆空，代表真的沒登入，應導回登入頁或報錯
+    if (!name || !phone) {
+      console.error("驗證資訊遺失，無法載入資料");
+      if (container) container.innerHTML = "❌ 請先完成登入驗證。";
+      return;
+    }
+
+    // 呼叫 API
     const res = await callApi("getAdminFullData", { 
       adminName: name, 
       adminPhone: phone 
     });
 
-    // 3. 因為 callApi 已經 return res.data 了，所以 res 就是我們要的陣列
+    // 資料處理 (確保 res 是陣列)
     fullData = Array.isArray(res) ? res : [];
     console.log("成功取得資料，數量：", fullData.length);
     
-    // 4. 執行渲染
+    // 執行各分頁渲染
     renderUnifiedList();   
     renderGroupInterface(); 
     renderDormInterface();  
     renderRoleInterface();
     
-    console.log("資料同步完成，共 " + fullData.length + " 筆。");
-    
-    // 如果有 loading 提示，渲染完可以清空或更新狀態
     if (container && fullData.length === 0) {
       container.innerHTML = "📭 目前無相關學員資料。";
+    } else if (container) {
+      // 渲染完畢後移除 loading 文字
+      container.innerHTML = ""; 
     }
+
   } catch (err) {
     console.error("loadAllData 發生錯誤:", err);
     alert("❌ 載入失敗：" + err.message);
@@ -541,18 +548,13 @@ const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms]))
       <input type="text" 
        class="room-name-input" 
        value="${rNo}" 
-       /* 💡 修正 1：改用 onchange，並傳入 this (元素本身) */
        onchange="updateRoomName('${rNo}', this.value, this)"
-       
        onclick="event.stopPropagation()"
        onkeydown="if(event.key==='Enter') this.blur()" 
-       
        style="font-size:1.2em; font-weight:900; border:1px solid transparent; background:transparent; width:70%;"
        onfocus="this.style.border='1px solid #ccc'; this.style.background='#fff'"
-       
-       /* 💡 修正 2：onblur 只負責恢復樣式，不要在裡面放邏輯以免重複觸發 */
        onblur="this.style.border='1px solid transparent'; this.style.background='transparent'"
->
+      >
       <span class="status-tag">${members.length}/4</span>
     </div>
 
@@ -639,12 +641,33 @@ const allRoomNos = Array.from(new Set([...Object.keys(rooms), ...virtualRooms]))
 }
   
   function setActiveRoom(rNo) {
-    activeRoom = rNo;
-    const roomMembers = fullData.filter(m => m.room === rNo);
-    const gender = roomMembers.length > 0 ? roomMembers[0].gender : "未定";
-    document.getElementById('current-focus-info').innerHTML = `👉 正在編排：<b style="color:red;">${rNo}</b> 房 (${gender}生)`;
-    renderDormInterface();
+  activeRoom = rNo;
+
+  // 💡 關鍵修正：計算成員時，必須同時考慮「原始資料」與「尚未存檔的變動」
+  const roomMembers = fullData.filter(m => {
+    const pending = changedRows.get(m.row);
+    // 如果暫存中有 room 資訊，優先用暫存的；否則用原始資料
+    const currentRoom = (pending && pending.room !== undefined) ? pending.room : m.room;
+    return currentRoom === rNo;
+  });
+
+  // 取得該房成員的性別 (同樣優先參考暫存，以防萬一有性別異動)
+  let gender = "未定";
+  if (roomMembers.length > 0) {
+    const firstMember = roomMembers[0];
+    const pendingGender = changedRows.get(firstMember.row);
+    gender = (pendingGender && pendingGender.gender) ? pendingGender.gender : firstMember.gender;
   }
+
+  // 更新介面提示文字
+  const focusInfo = document.getElementById('current-focus-info');
+  if (focusInfo) {
+    focusInfo.innerHTML = `👉 正在編排：<b style="color:red;">${rNo}</b> 房 (${gender}生)`;
+  }
+
+  // 重新渲染編寢介面，確保選取狀態 (Active) 正確套用
+  renderDormInterface();
+}
 
 function createNewRoom() {
   // 取得目前畫面上所有的房號
@@ -756,46 +779,49 @@ function removeFromRoom(row) {
 
   // 7. 彈窗編輯邏輯
   function openEditModalByRow(rowId) {
-    const m = fullData.find(item => item.row === rowId);
-    if(!m) return;
-    document.getElementById('edit-row-index').value = m.row;
-    document.getElementById('m-name').value = m.name || "";
-    document.getElementById('m-gender').value = m.gender || "";
-    document.getElementById('m-birthday').value = m.birthday || "";
-    /* document.getElementById('m-idCard').value = m.idCard || ""; */
-    document.getElementById('m-phone').value = m.phone || "";
-    document.getElementById('m-email').value = m.email || "";
-    document.getElementById('m-role').value = m.role || "";
-    document.getElementById('m-school').value = m.school || "";
-    document.getElementById('m-grade').value = m.grade || "";
-    document.getElementById('m-church').value = m.church || "";
-    document.getElementById('m-isChristian').value = m.isChristian || "";
-    document.getElementById('m-isBaptized').value = m.isBaptized || "";
-    document.getElementById('m-iceName').value = m.iceName || "";
-    document.getElementById('m-iceRel').value = m.iceRel || "";
-    document.getElementById('m-icePhone').value = m.icePhone || "";
-    document.getElementById('m-isAttended').value = m.isAttended || "";
-    document.getElementById('m-dietary').value = m.dietary || "";
-    document.getElementById('m-medical').value = m.medical || "";
-    document.getElementById('editModal').classList.remove('hidden');
+  const m = fullData.find(item => item.row === rowId);
+  if (!m) return;
 
-    // 2. 💡 新增：自動監聽改動
-    // 取得彈窗內所有的輸入控制項
-    const inputs = document.querySelectorAll('#editModal input, #editModal select, #editModal textarea');
+  // 1. 填入資料
+  document.getElementById('edit-row-index').value = m.row;
+  document.getElementById('m-name').value = m.name || "";
+  document.getElementById('m-gender').value = m.gender || "";
+  document.getElementById('m-birthday').value = m.birthday || "";
+  // document.getElementById('m-idCard').value = m.idCard || ""; // 已依隱私需求移除
+  document.getElementById('m-phone').value = m.phone || "";
+  document.getElementById('m-email').value = m.email || "";
+  document.getElementById('m-school').value = m.school || "";
+  document.getElementById('m-grade').value = m.grade || "";
+  document.getElementById('m-church').value = m.church || "";
+  document.getElementById('m-isChristian').value = m.isChristian || "";
+  document.getElementById('m-isBaptized').value = m.isBaptized || "";
+  document.getElementById('m-iceName').value = m.iceName || "";
+  document.getElementById('m-iceRel').value = m.iceRel || "";
+  document.getElementById('m-icePhone').value = m.icePhone || "";
+  document.getElementById('m-isAttended').value = m.isAttended || "";
+  document.getElementById('m-dietary').value = m.dietary || "";
+  document.getElementById('m-medical').value = m.medical || "";
+
+  // 2. 💡 修正監聽邏輯：避免重複綁定監聽器
+  // 不要每次 open 都 addEventListener。
+  // 建議的做法是：在彈窗的 HTML 標籤上統一加一個監聽（委派機制），或者如下：
+  const modalForm = document.querySelector('#editModal form') || document.getElementById('editModal');
   
-    inputs.forEach(el => {
-    // 使用 input 事件 (即時觸發) 或 change 事件 (失去焦點觸發)
-    el.addEventListener('input', () => {
+  // 移除舊的監聽（如果有的話），或確保只綁定一次
+  // 這裡最簡單的做法是在外部初始化監聽，或使用一次性標記
+  if (!modalForm.dataset.listenerAttached) {
+    modalForm.addEventListener('input', () => {
       if (!isDirty) {
         isDirty = true;
-        console.log("偵測到個人資料變動，防誤觸攔截已啟動");
+        console.log("偵測到個人資料變動");
       }
-    }, { once: true }); // 每個欄位只需要監聽第一次變動即可
-  });
-
-  // 3. 顯示彈窗
-  document.getElementById('editModal').classList.remove('hidden');
+    });
+    modalForm.dataset.listenerAttached = "true";
   }
+
+  // 3. 💡 修正重複調用問題 (Polish #2)：只在最後顯示彈窗
+  document.getElementById('editModal').classList.remove('hidden');
+}
 
   function closeModal() {
   // 1. 隱藏彈窗
@@ -1366,6 +1392,13 @@ async function saveBatchData(btnElement) {
     }
   }
 }
+
+  window.addEventListener('beforeunload', (e) => {
+  if (isDirty) {
+    e.preventDefault();
+    e.returnValue = ''; // 現代瀏覽器需要這行來觸發確認視窗
+  }
+});
 </script>
 </body>
 </html>
