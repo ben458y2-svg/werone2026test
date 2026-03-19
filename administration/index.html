@@ -869,7 +869,7 @@
         const end = start + pageSize;
         const pagedData = data.slice(start, end); // 只取該頁的 20 筆
         // --- 分頁邏輯結束 ---
-        container.innerHTML = pagedData.map(m => {
+        const cardsHtml = pagedData.map(m => {
           // 1. 邏輯計算與狀態判定
           const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
           const isComplete = (balance <= 0);
@@ -904,6 +904,7 @@
       <button class="btn" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>下一頁</button>
     </div>
   `;
+        container.innerHTML = cardsHtml + paginationHtml;
       }
     }
 
