@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WE R ONE 2026 報名行政管理後台</title>
   <style>
+    /* --- 1. 核心品牌色彩與字體 --- */
     :root {
       --shine-lime: #00ff7f; --shine-black: #1a1a1a;
       --shine-bg: #ffffff; --shine-light: #f4f7f5;
@@ -21,18 +22,27 @@
       position: relative;
     }
 
-    /* --- 分頁切換區 (對齊團報樣式) --- */
-    .main-tabs { 
-      display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; 
+    .form-section { border: 2px solid var(--shine-black); padding: 20px; background: var(--shine-light); margin-bottom: 30px; }
+
+    .section-title { 
+      display: inline-block; background: var(--shine-black); color: var(--shine-lime); 
+      padding: 5px 20px; font-weight: 900; font-size: 1.1em; margin-bottom: 20px; 
+      margin-top: -35px; border: 2px solid var(--shine-black); box-shadow: 4px 4px 0px var(--shine-lime);
     }
+
+    /* --- 2. 分頁標籤 (配合團報樣式修正) --- */
+    .main-tabs { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+    
     .tab-btn { 
       flex: 1; min-width: 120px; padding: 15px; font-weight: 900; 
-      border: 2px solid var(--shine-black); cursor: pointer; 
-      background: var(--shine-bg); color: var(--shine-black); 
-      transition: all 0.1s ease; text-transform: uppercase;
+      border: 3px solid var(--shine-black); 
+      cursor: pointer; background: white; color: var(--shine-black); 
+      transition: all 0.1s ease;
       display: inline-flex; align-items: center; justify-content: center;
+      text-transform: uppercase;
     }
-    /* 套用團報 .btn-next:hover & .active 邏輯 */
+
+    /* 套用團報後台按鈕動態邏輯 */
     .tab-btn:hover, .tab-btn.active { 
       background: var(--shine-black); 
       color: var(--shine-lime); 
@@ -40,56 +50,91 @@
       transform: translate(-3px, -3px); 
     }
 
-    /* --- 核心清單佈局控制 --- */
-    #section-list {
-      display: grid; 
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px; width: 100%;
-    }
-    #section-list.finance-mode { display: block !important; }
-
-    /* --- 資料編修卡片 --- */
-    .item-card { 
-      background: var(--shine-bg); border: 3px solid var(--shine-black); 
-      padding: 15px; cursor: pointer; transition: all 0.1s ease; 
-      display: flex; flex-direction: column; justify-content: space-between;
-      min-height: 150px;
-    }
-    .item-card:hover { transform: translate(-4px, -4px); box-shadow: 8px 8px 0px var(--shine-black); }
-    
-    .window-label {
-      font-size: 12px; color: #333; background: var(--shine-lime);
-      padding: 2px 8px; border: 1px solid #000; margin-top: 10px;
-      display: inline-block; font-weight: 700;
+    /* --- 3. 按鈕樣式 (由團報後台樣式整合) --- */
+    .btn { 
+      padding: 12px 25px; font-weight: 900; border: 2px solid var(--shine-black); 
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center; 
+      text-transform: uppercase; text-decoration: none; transition: all 0.1s ease;
     }
 
-    /* --- 財務專用表格樣式 --- */
-    .finance-table { width: 100%; border-collapse: collapse; background: white; border: 3px solid var(--shine-black); }
-    .finance-table th { background: var(--shine-black); color: var(--shine-lime); padding: 12px; text-align: left; }
-    .finance-table td { border: 1px solid var(--shine-gray); padding: 12px; font-size: 14px; }
-    .finance-table tr:hover:not(.group-header):not(.table-summary-row) { background: #fffde7; cursor: pointer; }
-    
-    .group-header { background: #e3f2fd !important; font-weight: 900; border-bottom: 2px solid var(--shine-black) !important; color: var(--shine-blue); }
-    .table-summary-row { background-color: #fafafa !important; font-weight: bold; border-top: 2px solid var(--shine-black); border-bottom: 3px solid var(--shine-black); }
+    .btn-next { background: var(--shine-bg); color: var(--shine-black); }
+    .btn-next:hover { 
+      background: var(--shine-black); color: var(--shine-lime); 
+      box-shadow: 6px 6px 0px var(--shine-black); transform: translate(-3px, -3px); 
+    }
 
-    /* --- 動作按鈕 --- */
+    .btn-batch { 
+      background: var(--shine-yellow); color: black; display: none; margin-bottom: 10px;
+      box-shadow: 4px 4px 0px var(--shine-black);
+    }
+
+    /* 儲存動作專用 (紅色) */
     .btn-save-action {
       width: 100%; background: var(--shine-red) !important; color: white !important;
       border: 2px solid var(--shine-black); box-shadow: 6px 6px 0px var(--shine-black);
       font-size: 1.2em; font-weight: 900; padding: 15px; cursor: pointer;
-      transition: all 0.1s ease;
     }
     .btn-save-action:active { transform: translate(2px, 2px); box-shadow: 4px 4px 0px var(--shine-black); }
 
-    .btn-batch { background: var(--shine-yellow); color: black; border: 2px solid #000; font-weight: 900; padding: 10px 20px; cursor: pointer; margin-bottom: 10px; }
+    /* --- 4. 輸入與表單元件 --- */
+    input, select, textarea { border: 2px solid var(--shine-black); padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-top: 5px; }
+    label { font-weight: 900; background: var(--shine-lime); padding: 2px 10px; display: inline-block; cursor: pointer; border: 1px solid var(--shine-black); }
+
+    /* --- 5. 清單佈局 (解決變形問題) --- */
+    #section-list {
+      display: grid !important; 
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px; width: 100%;
+    }
+
+    /* 財務分頁時強制改為 Block */
+    #section-list.finance-mode { display: block !important; }
+
+    .item-card { 
+      background: var(--shine-bg); border: 3px solid var(--shine-black); 
+      padding: 15px; cursor: pointer; transition: all 0.1s ease; position: relative;
+      display: flex; flex-direction: column; justify-content: space-between;
+      min-height: 140px;
+    }
+    .item-card:hover { transform: translate(-4px, -4px); box-shadow: 8px 8px 0px var(--shine-black); }
     
+    .window-label {
+      font-size: 12px; color: #333; background: #e0e0e0; 
+      padding: 2px 8px; border-radius: 4px; border: 1px solid #999;
+      margin-top: 5px; display: inline-block; font-weight: 700;
+    }
+
+    /* --- 6. 財務與統計表格 --- */
+    .finance-table { width: 100%; border-collapse: collapse; background: white; border: 3px solid var(--shine-black); }
+    .finance-table th { background: var(--shine-black); color: var(--shine-lime); padding: 12px; text-align: left; }
+    .finance-table td { border: 1px solid var(--shine-gray); padding: 10px; font-size: 14px; }
+    .finance-table tr:hover:not(.group-header):not(.table-summary-row) { background: #fffde7; cursor: pointer; }
+
+    .group-header { background: #e3f2fd !important; font-weight: 900; border-bottom: 2px solid var(--shine-black) !important; color: var(--shine-blue); }
+    .table-summary-row { background-color: #f8f9fa !important; font-weight: bold; border-top: 2px solid #333; border-bottom: 2px solid #333; }
+
     .balance-red { color: var(--shine-red); font-weight: 900; }
     .balance-green { color: #2e7d32; font-weight: 900; }
+
+    /* 統計表格 */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; }
+    .stats-card { background: white; border: 3px solid #000; padding: 18px; box-shadow: 6px 6px 0px #000; margin-bottom: 20px;}
+    .stats-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+    .stats-table th, .stats-table td { border: 1px solid #ddd; padding: 10px 8px; text-align: center; }
+    .stats-table th { background-color: #f8f9fa; }
+    .total-cell { background-color: #fff9c4 !important; font-weight: bold; }
+    .row-label { text-align: left !important; background: #fdfdfd; font-weight: bold; }
+
+    /* --- 7. 其他元件 --- */
     .badge { padding: 4px 8px; font-weight: 900; font-size: 12px; border: 1px solid black; }
     .bg-red { background: var(--shine-red); color: white; }
     .bg-green { background: var(--shine-lime); color: black; }
     .bg-yellow { background: var(--shine-yellow); color: black; }
+
+    #batch-summary-info { background: #fff9c4; padding: 15px; border: 3px dashed #000; margin-bottom: 20px; font-weight: 900; }
     .hidden { display: none !important; }
+    .form-group { margin-bottom: 15px; }
+    .loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; font-weight: 900; }
 </style>
 </head>
 <body>
