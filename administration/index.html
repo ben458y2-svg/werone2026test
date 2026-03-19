@@ -653,7 +653,7 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbz3Y29PUsDHuPIkR1GxSmAu_k8STC8M16FPOp1tYaqNzVFS-qB79K_R4s4LR4eb_ZEG/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzg1fKfYMFAy_UjLfp5X8kZgpOpXDMLa1lnp8FpAIHzu4S9xbgmUQCRmMTWjnPyzVoD/exec";
     let fullData = [];
     let currentTab = 'edit';
     let searchTimer;
@@ -1300,29 +1300,28 @@ function changePage(delta) {
   });
 }
 
-    function createTableHtml(channels, groupData) {
-      let html = `<table class="stats-table"><thead><tr><th>類別</th>`;
-      channels.forEach(ch => html += `<th>${ch}</th>`);
-      html += `<th class="total-cell">小計</th></tr></thead><tbody>`;
-      let grandTotal = 0;
-      let colTotals = {};
-      Object.keys(groupData).sort().forEach(label => {
-        let rowSum = 0;
-        html += `<tr><td class="row-label">${label}</td>`;
-        channels.forEach(ch => {
-          const val = groupData[label][ch] || 0;
-          html += `<td>${val}</td>`;
-          rowSum += val;
-          colTotals[ch] = (colTotals[ch] || 0) + val;
-        });
-        html += `<td class="total-cell">${rowSum}</td></tr>`;
-        grandTotal += rowSum;
-      });
-      html += `</tbody><tfoot><tr class="total-cell"><td>總計</td>`;
-      channels.forEach(ch => html += `<td>${colTotals[ch] || 0}</td>`);
-      html += `<td>${grandTotal}</td></tr></tfoot></table>`;
-      return html;
-    }
+    function createTableHtml(channels, categoryData) {
+  let html = `<table class="stats-table"><thead><tr><th>類別</th>`;
+  
+  // 標題列：各個報名管道
+  channels.forEach(ch => { html += `<th>${ch}</th>`; });
+  html += `<th>小計</th></tr></thead><tbody>`;
+
+  // 資料列：各個數值 (例如：男、女)
+  Object.keys(categoryData).forEach(val => {
+    html += `<tr><td><strong>${val}</strong></td>`;
+    let rowTotal = 0;
+    channels.forEach(ch => {
+      const count = categoryData[val][ch] || 0;
+      html += `<td>${count}</td>`;
+      rowTotal += count;
+    });
+    html += `<td>${rowTotal}</td></tr>`;
+  });
+
+  html += `</tbody></table>`;
+  return html;
+}
 
     // --- 工具函式 ---
     function formatPhone(obj) {
