@@ -703,12 +703,40 @@
     }
 
     async function fetchData() {
-      const res = await api({ action: 'fetchAllData', token: sessionStorage.getItem('admin_token') });
-      if (res && res.success) {
-        fullData = res.data;
-        handleSearch();
-      }
+  const res = await api({ 
+    action: 'fetchAllData', 
+    token: sessionStorage.getItem('admin_token') 
+  });
+
+  if (res && res.success) {
+    // 1. 更新全域原始資料
+    fullData = res.data;
+
+    // 2. 如果目前在「財務模式」，必須先更新下拉選單的選項內容
+    if (currentTab === 'finance') {
+      updateWindowFilterOptions(); 
     }
+
+    // 3. 執行智慧分流渲染 (不再呼叫 handleSearch)
+    refreshCurrentView();
+  }
+}
+
+/**
+ * 輔助函式：根據當前頁籤刷新畫面
+ * 這樣不管是 fetchData 還是切換 Tab 都能共用這套邏輯
+ */
+function refreshCurrentView() {
+  // 先同步搜尋過濾後的資料 (或是直接把 fullData 丟進去)
+  // 建議這裡呼叫各模組專屬的 Search 函式，以保留使用者目前的搜尋關鍵字
+  if (currentTab === 'finance') {
+    handleFinanceSearch(); 
+  } else if (currentTab === 'edit') {
+    handleAdminSearch();
+  } else if (currentTab === 'stats') {
+    refreshStats();
+  }
+}
 
     // --- 分頁切換 ---
    function switchMainTab(tab) {
