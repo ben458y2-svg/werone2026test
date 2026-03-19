@@ -5,181 +5,527 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WE R ONE 2026 報名行政管理後台</title>
   <style>
-    /* --- 1. 核心品牌色彩與字體 --- */
+    /* =========================================
+       1. 全域變數與基礎樣式 (與 teamadmin 完全一致)
+       ========================================= */
     :root {
-      --shine-lime: #00ff7f; --shine-black: #1a1a1a;
-      --shine-bg: #ffffff; --shine-light: #f4f7f5;
-      --shine-gray: #d1d1d1; --shine-red: #ff4d4d;
-      --shine-yellow: #fbc02d; --shine-blue: #2196f3;
+      --shine-lime: #00ff7f;
+      --shine-black: #1a1a1a;
+      --shine-bg: #ffffff;
+      --shine-light: #f4f7f5;
+      --shine-gray: #d1d1d1;
+      --shine-red: #ff4d4d;
+      --shine-blue: #3498db;
+      --shine-yellow: #fbc02d;
     }
-    
-    body { font-family: "Inter", "Noto Sans TC", sans-serif; background-color: #f0f0f0; margin: 0; padding: 10px; }
+
+    body {
+      font-family: "Inter", "Noto Sans TC", sans-serif;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 10px;
+    }
 
     .container {
-      max-width: 1300px; margin: 20px auto; background: var(--shine-bg);
-      padding: clamp(20px, 4vw, 40px); border: 3px solid var(--shine-black);
-      box-shadow: 12px 12px 0px var(--shine-black); box-sizing: border-box;
+      max-width: 1300px;
+      margin: 20px auto;
+      background: var(--shine-bg);
+      padding: clamp(20px, 4vw, 40px);
+      border: 3px solid var(--shine-black);
+      box-shadow: 12px 12px 0px var(--shine-black);
+      box-sizing: border-box;
       position: relative;
     }
 
-    .form-section { border: 2px solid var(--shine-black); padding: 20px; background: var(--shine-light); margin-bottom: 30px; }
+    /* =========================================
+       2. 表單與輸入元件
+       ========================================= */
+    .form-section {
+      border: 2px solid var(--shine-black);
+      padding: 20px;
+      background: var(--shine-light);
+      margin-bottom: 30px;
+      position: relative;
+    }
 
-    .section-title { display: inline-block; background: var(--shine-black); color: var(--shine-lime); padding: 5px 20px; font-weight: 900; font-size: 1.1em; margin-bottom: 20px; margin-top: -35px; 
-      border: 2px solid var(--shine-black); box-shadow: 4px 4px 0px var(--shine-lime);}
+    .section-title {
+      display: inline-block;
+      background: var(--shine-black);
+      color: var(--shine-lime);
+      padding: 5px 20px;
+      font-weight: 900;
+      font-size: 1.1em;
+      margin-bottom: 20px;
+      margin-top: -35px;
+      border: 2px solid var(--shine-black);
+      box-shadow: 4px 4px 0px var(--shine-lime);
+    }
 
-    /* --- 2. 分頁標籤 (配合團報樣式修正) --- */
-    .main-tabs { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
-    
-    .tab-btn { 
-      flex: 1; min-width: 120px; padding: 15px; font-weight: 900; 
-      border: 3px solid var(--shine-black); 
-      cursor: pointer; background: white; color: var(--shine-black); 
-      transition: all 0.1s ease;
-      display: inline-flex; align-items: center; justify-content: center;
+    input, select, textarea {
+      border: 2px solid var(--shine-black);
+      padding: 12px;
+      font-size: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 5px;
+      font-family: "Inter", "Noto Sans TC", sans-serif;
+    }
+
+    label {
+      font-weight: 900;
+      background: var(--shine-lime);
+      padding: 2px 10px;
+      display: inline-block;
+      border: 1px solid var(--shine-black);
+    }
+
+    .form-group { margin-bottom: 15px; }
+
+    /* =========================================
+       3. 按鈕樣式 (與 teamadmin 完全一致)
+       ========================================= */
+    .btn {
+      padding: 12px 25px;
+      font-weight: 900;
+      border: 2px solid var(--shine-black);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.1s ease;
+      font-family: "Inter", "Noto Sans TC", sans-serif;
     }
 
-    /* 套用團報後台按鈕動態邏輯 */
-    .tab-btn:hover, .tab-btn.active { 
-      background: var(--shine-black); 
-      color: var(--shine-lime); 
-      box-shadow: 6px 6px 0px var(--shine-black); 
-      transform: translate(-3px, -3px); 
+    .btn-next {
+      background: var(--shine-bg);
+      color: var(--shine-black);
     }
 
-    /* --- 3. 按鈕樣式 (由團報後台樣式整合) --- */
-    .btn { 
-      padding: 12px 25px; font-weight: 900; border: 2px solid var(--shine-black); 
-      cursor: pointer; display: inline-flex; align-items: center; justify-content: center; 
-      text-transform: uppercase; text-decoration: none; transition: all 0.1s ease;
+    .btn-next:hover, .btn-next.active {
+      background: var(--shine-black);
+      color: var(--shine-lime);
+      box-shadow: 6px 6px 0px var(--shine-black);
+      transform: translate(-3px, -3px);
     }
 
-    .btn-next { background: var(--shine-bg); color: var(--shine-black); }
-    .btn-next:hover { 
-      background: var(--shine-black); color: var(--shine-lime); 
-      box-shadow: 6px 6px 0px var(--shine-black); transform: translate(-3px, -3px); 
+    .btn-save-action {
+      width: 100%;
+      background: var(--shine-red) !important;
+      color: white !important;
+      border: 2px solid var(--shine-black);
+      box-shadow: 6px 6px 0px var(--shine-black);
+      font-size: 1.2em;
+      font-weight: 900;
+      padding: 15px;
+      cursor: pointer;
+      font-family: "Inter", "Noto Sans TC", sans-serif;
     }
 
-    .btn-batch { 
-      background: var(--shine-yellow); color: black; display: none; margin-bottom: 10px;
+    .btn-save-action:active {
+      transform: translate(2px, 2px);
       box-shadow: 4px 4px 0px var(--shine-black);
     }
 
-    /* 儲存動作專用 (紅色) */
-    .btn-save-action {
-      width: 100%; background: var(--shine-red) !important; color: white !important;
-      border: 2px solid var(--shine-black); box-shadow: 6px 6px 0px var(--shine-black);
-      font-size: 1.2em; font-weight: 900; padding: 15px; cursor: pointer;
-    }
-    .btn-save-action:active { transform: translate(2px, 2px); box-shadow: 4px 4px 0px var(--shine-black); }
-
-    /* --- 4. 輸入與表單元件 --- */
-    input, select, textarea { border: 2px solid var(--shine-black); padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-top: 5px; }
-    label { font-weight: 900; background: var(--shine-lime); padding: 2px 10px; display: inline-block; cursor: pointer; border: 1px solid var(--shine-black); }
-
-    /* --- 5. 清單佈局 (解決變形問題) --- */
-    #section-list {
-      display: grid !important; 
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px; width: 100%;
+    /* 批次按鈕 (黃色) */
+    .btn-batch {
+      background: var(--shine-yellow);
+      color: var(--shine-black);
+      border: 2px solid var(--shine-black);
+      box-shadow: 4px 4px 0px var(--shine-black);
+      display: none;
+      margin-bottom: 10px;
     }
 
-    /* 財務分頁時強制改為 Block */
-    #section-list.finance-mode { display: block !important; }
+    .btn-batch:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px var(--shine-black);
+    }
 
-    .item-card { 
-      background: var(--shine-bg); border: 3px solid var(--shine-black); 
-      padding: 15px; cursor: pointer; transition: all 0.1s ease; position: relative;
-      display: flex; flex-direction: column; justify-content: space-between;
+    /* =========================================
+       4. 分頁標籤 (與 teamadmin btn-next 風格一致)
+       ========================================= */
+    .tab-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 12px 25px;
+      font-weight: 900;
+      border: 2px solid var(--shine-black);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      transition: all 0.1s ease;
+      background: var(--shine-bg);
+      color: var(--shine-black);
+      font-family: "Inter", "Noto Sans TC", sans-serif;
+      font-size: 1em;
+    }
+
+    .tab-btn:hover, .tab-btn.active {
+      background: var(--shine-black);
+      color: var(--shine-lime);
+      box-shadow: 6px 6px 0px var(--shine-black);
+      transform: translate(-3px, -3px);
+    }
+
+    /* =========================================
+       5. 卡片元件
+       ========================================= */
+    .item-card {
+      background: var(--shine-bg);
+      border: 3px solid var(--shine-black);
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.1s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       min-height: 140px;
     }
-    .item-card:hover { transform: translate(-4px, -4px); box-shadow: 8px 8px 0px var(--shine-black); }
-    
-    .window-label {
-      font-size: 12px; color: #333; background: #e0e0e0; 
-      padding: 2px 8px; border-radius: 4px; border: 1px solid #999;
-      margin-top: 5px; display: inline-block; font-weight: 700;
+
+    .item-card:hover {
+      transform: translate(-4px, -4px);
+      box-shadow: 8px 8px 0px var(--shine-black);
     }
 
-    /* --- 6. 財務與統計表格 --- */
-    .finance-table { width: 100%; border-collapse: collapse; background: white; border: 3px solid var(--shine-black); }
-    .finance-table th { background: var(--shine-black); color: var(--shine-lime); padding: 12px; text-align: left; }
-    .finance-table td { border: 1px solid var(--shine-gray); padding: 10px; font-size: 14px; }
-    .finance-table tr:hover:not(.group-header):not(.table-summary-row) { background: #fffde7; cursor: pointer; }
+    .card-header {
+      border-bottom: 2px solid var(--shine-black);
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-    .group-header { background: #e3f2fd !important; font-weight: 900; border-bottom: 2px solid var(--shine-black) !important; color: var(--shine-blue); }
-    .group-header { cursor: pointer; transition: background 0.2s; }
+    .window-label {
+      font-size: 12px;
+      color: #333;
+      background: #e0e0e0;
+      padding: 2px 8px;
+      border: 1px solid #999;
+      margin-top: 5px;
+      display: inline-block;
+      font-weight: 700;
+    }
+
+    /* =========================================
+       6. 財務表格
+       ========================================= */
+    .finance-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border: 3px solid var(--shine-black);
+    }
+
+    .finance-table th {
+      background: var(--shine-black);
+      color: var(--shine-lime);
+      padding: 12px;
+      text-align: left;
+      font-weight: 900;
+    }
+
+    .finance-table td {
+      border: 1px solid var(--shine-gray);
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .finance-table tr:hover:not(.group-header):not(.table-summary-row) {
+      background: #fffde7;
+      cursor: pointer;
+    }
+
+    .group-header {
+      background: #e3f2fd !important;
+      font-weight: 900;
+      border-bottom: 2px solid var(--shine-black) !important;
+      color: var(--shine-blue);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
     .group-header:hover { background: #d1e9ff !important; }
-    .group-header i { margin-right: 10px; transition: transform 0.2s; display: inline-block; }
-    .group-header.collapsed i { transform: rotate(-90deg); }
-    .collapsed-row { display: none !important; }
-    
-    .table-summary-row { background-color: #f8f9fa !important; font-weight: bold; border-top: 2px solid #333; border-bottom: 2px solid #333; }
-/* 強化收合視覺 */
-.toggle-icon { display: inline-block; transition: transform 0.2s; margin-right: 10px; font-weight: bold; }
-.header-phone { margin-left: 15px; font-size: 12px; font-weight: normal; color: #666; }
+
+    .toggle-icon {
+      display: inline-block;
+      transition: transform 0.2s;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+
+    .header-phone {
+      margin-left: 15px;
+      font-size: 12px;
+      font-weight: normal;
+      color: #666;
+    }
+
+    .table-summary-row {
+      background-color: #f8f9fa !important;
+      font-weight: bold;
+      border-top: 2px solid var(--shine-black);
+      border-bottom: 2px solid var(--shine-black);
+    }
+
     .balance-red { color: var(--shine-red); font-weight: 900; }
     .balance-green { color: #2e7d32; font-weight: 900; }
-    /* 備註欄單行化 */
-.note-cell { 
-  font-size: 11px; color: #666; max-width: 150px; 
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
-}
 
-    /* 統計表格 */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; }
-    .stats-card { background: white; border: 3px solid #000; padding: 18px; box-shadow: 6px 6px 0px #000; margin-bottom: 20px;}
+    .note-cell {
+      font-size: 11px;
+      color: #666;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* =========================================
+       7. 統計表格
+       ========================================= */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 24px;
+    }
+
+    .stats-card {
+      background: white;
+      border: 3px solid var(--shine-black);
+      padding: 18px;
+      box-shadow: 6px 6px 0px var(--shine-black);
+      margin-bottom: 20px;
+    }
+
+    .stats-card h3 {
+      font-weight: 900;
+      margin-top: 0;
+      border-bottom: 3px solid var(--shine-black);
+      padding-bottom: 8px;
+    }
+
     .stats-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
     .stats-table th, .stats-table td { border: 1px solid #ddd; padding: 10px 8px; text-align: center; }
-    .stats-table th { background-color: #f8f9fa; }
+    .stats-table th { background-color: var(--shine-black); color: var(--shine-lime); font-weight: 900; }
     .total-cell { background-color: #fff9c4 !important; font-weight: bold; }
     .row-label { text-align: left !important; background: #fdfdfd; font-weight: bold; }
 
-    /* --- 7. 其他元件 --- */
-    .badge { padding: 4px 8px; font-weight: 900; font-size: 12px; border: 1px solid black; }
-    .bg-red { background: var(--shine-red); color: white; }
-    .bg-green { background: var(--shine-lime); color: black; }
-    .bg-yellow { background: var(--shine-yellow); color: black; }
-
-    .search-container { 
-  display: flex; flex-direction: column; gap: 10px; 
-  margin-bottom: 15px; position: sticky; top: 0; background: #f0f0f0; z-index: 5; padding: 10px 0;
-}
-    #list-search { 
-      padding: 12px 20px; border: 3px solid var(--shine-black); 
-      box-shadow: 6px 6px 0px var(--shine-black); font-weight: 900; 
+    /* =========================================
+       8. 徽章與標籤
+       ========================================= */
+    .badge {
+      padding: 4px 8px;
+      font-weight: 900;
+      font-size: 12px;
+      border: 1px solid var(--shine-black);
     }
-#batch-status-bar { 
-  background: var(--shine-lime); border: 2px solid #000; padding: 5px 15px; font-weight: 900; 
-}
-    #batch-summary-info { background: #fff9c4; padding: 15px; border: 3px dashed #000; margin-bottom: 20px; font-weight: 900; }
+
+    .bg-red { background: var(--shine-red); color: white; }
+    .bg-green { background: var(--shine-lime); color: var(--shine-black); }
+    .bg-yellow { background: var(--shine-yellow); color: var(--shine-black); }
+
+    /* =========================================
+       9. 搜尋列 / 批次狀態
+       ========================================= */
+    .search-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+      position: sticky;
+      top: 0;
+      background: #f0f0f0;
+      z-index: 5;
+      padding: 10px 0;
+    }
+
+    #list-search {
+      padding: 12px 20px;
+      border: 3px solid var(--shine-black);
+      box-shadow: 6px 6px 0px var(--shine-black);
+      font-weight: 900;
+      font-size: 16px;
+      font-family: "Inter", "Noto Sans TC", sans-serif;
+    }
+
+    #batch-status-bar {
+      background: var(--shine-lime);
+      border: 2px solid var(--shine-black);
+      padding: 5px 15px;
+      font-weight: 900;
+    }
+
+    #batch-summary-info {
+      background: #fff9c4;
+      padding: 15px;
+      border: 3px dashed var(--shine-black);
+      margin-bottom: 20px;
+      font-weight: 900;
+    }
+
+    /* =========================================
+       10. 清單佈局
+       ========================================= */
+    #section-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      width: 100%;
+    }
+
+    #section-list.finance-mode { display: block !important; }
+
+    /* =========================================
+       11. 彈窗 (editModal) 修正
+       ========================================= */
+    #editModal {
+      padding: 40px 10px !important;
+    }
+
+    #editModal > .container {
+      max-width: 900px !important;
+      border: 4px solid var(--shine-black) !important;
+      background: var(--shine-bg) !important;
+      box-shadow: 20px 20px 0px var(--shine-black) !important;
+      padding: 30px !important;
+    }
+
+    #editModal h2 {
+      margin-bottom: 40px;
+      font-size: 1.8em;
+      border-bottom: 4px double var(--shine-black);
+      padding-bottom: 10px;
+    }
+
+    #editModal .grid-row {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 15px 25px !important;
+    }
+
+    #editModal .form-group[style*="grid-column: 1 / -1"] {
+      grid-column: span 2 !important;
+    }
+
+    #editModal .form-section {
+      margin-bottom: 40px !important;
+      position: relative;
+    }
+
+    #editModal .v-req:focus {
+      border-color: var(--shine-lime);
+      outline: none;
+      box-shadow: 4px 4px 0px var(--shine-black);
+    }
+
+    /* 財務模組標題特殊色 */
+    .finance-section-title {
+      background: var(--shine-blue) !important;
+      color: white !important;
+      box-shadow: 4px 4px 0px var(--shine-blue) !important;
+    }
+
+    /* 備註區塊特殊色 */
+    .note-section { background: #fff9c4 !important; border: 3px solid var(--shine-yellow) !important; }
+    .note-section-title { background: var(--shine-yellow) !important; color: var(--shine-black) !important; box-shadow: 4px 4px 0px var(--shine-yellow) !important; }
+
+    /* =========================================
+       12. 載入遮罩
+       ========================================= */
+    .loading-mask {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.85);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.2em;
+      border: 5px solid var(--shine-black);
+    }
+
+    .loading-mask::before {
+      content: "⏳";
+      margin-right: 10px;
+      font-size: 1.5em;
+    }
+
+    /* =========================================
+       13. 動畫
+       ========================================= */
+    .tab-content { animation: fadeIn 0.3s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shake-red {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    /* =========================================
+       14. 響應式
+       ========================================= */
+    @media (max-width: 700px) {
+      #editModal .grid-row {
+        grid-template-columns: 1fr !important;
+      }
+      #editModal .form-group[style*="grid-column: 1 / -1"] {
+        grid-column: span 1 !important;
+      }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+
     .hidden { display: none !important; }
-    .form-group { margin-bottom: 15px; }
-    .loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; font-weight: 900; }
-</style>
+  </style>
 </head>
 <body>
 
   <div id="loading" class="loading-mask hidden">處理中 (PROCESSING)...</div>
 
+  <!-- ==================== 登入區塊 ==================== -->
   <div id="auth-block" class="container" style="max-width: 500px; margin-top: 80px;">
-    <div class="section-title">行政管理後台</div>
+    <div class="section-title">行政管理後台驗證</div>
     <div class="form-section">
-      <div class="form-group"><label for="u_name">帳號</label><input type="text" id="u_name"></div>
-      <div class="form-group"><label for="u_pass">密碼</label><input type="password" id="u_pass"></div>
+      <div class="form-group">
+        <label for="u_name">帳號</label>
+        <input type="text" id="u_name" placeholder="請輸入帳號">
+      </div>
+      <div class="form-group">
+        <label for="u_pass">密碼</label>
+        <input type="password" id="u_pass" placeholder="請輸入密碼">
+      </div>
       <button class="btn btn-next" style="width:100%; margin-top:10px;" onclick="doLogin()">登入驗證</button>
     </div>
   </div>
 
+  <!-- ==================== 主後台介面 ==================== -->
   <div id="admin-dashboard" class="container hidden">
     <div class="section-title" id="dashboard-title">營會行政後台</div>
-    
-    <div class="main-tabs">
+
+    <!-- 分頁切換 -->
+    <div class="tab-container">
       <button class="tab-btn active" id="tab-edit" onclick="switchMainTab('edit')">📝 資料編修</button>
       <button class="tab-btn" id="tab-finance" onclick="switchMainTab('finance')">💰 繳費登記</button>
       <button class="tab-btn" id="tab-stats" onclick="switchMainTab('stats')">📊 報名現況</button>
     </div>
 
+    <!-- 搜尋區 -->
     <div id="search-section" class="form-section">
       <div class="section-title">快速檢索</div>
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px;">
@@ -189,87 +535,100 @@
         </div>
         <div>
           <label>目前筆數</label>
-          <div id="stats-count" style="padding:12px; font-weight:900; border:2px solid black; background:white; margin-top:5px; text-align:center;">0</div>
+          <div id="stats-count" style="padding:12px; font-weight:900; border:2px solid var(--shine-black); background:white; margin-top:5px; text-align:center; box-shadow: 4px 4px 0px var(--shine-black);">0 筆</div>
         </div>
       </div>
     </div>
 
-    <button id="btn-batch-edit" class="btn btn-batch" onclick="openBatchEdit()">⚡ 批次登記選中項目 (<span id="selected-count">0</span>)</button>
+    <!-- 批次按鈕 -->
+    <button id="btn-batch-edit" class="btn btn-batch" onclick="openBatchEdit()">
+      ⚡ 批次登記選中項目 (<span id="selected-count">0</span>)
+    </button>
 
-    <div id="section-list" class="grid-display-area"></div>
+    <!-- 卡片 / 財務清單 -->
+    <div id="section-list" class="tab-content"></div>
 
-    <div id="section-stats" class="hidden">
+    <!-- 統計分頁 -->
+    <div id="section-stats" class="hidden tab-content">
       <div style="text-align: right; margin-bottom: 15px;">
-        <button class="btn" onclick="refreshStats()">🔄 刷新數據</button>
+        <button class="btn btn-next" onclick="refreshStats()">🔄 刷新數據</button>
       </div>
       <div id="stats-container" class="stats-grid">
-        <div class="loading-placeholder">正在彙整報名數據...</div>
+        <div class="stats-card">正在彙整報名數據...</div>
       </div>
     </div>
   </div>
 
-  <div id="editModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto; padding: 20px 0;">
-    <div class="container" style="max-width: 900px; margin: auto;">
-      <button onclick="closeModal()" style="position: absolute; right: 20px; top: 20px; background: var(--shine-red); color: white; border: 2px solid black; padding: 5px 15px; cursor: pointer; font-weight:900;">CLOSE X</button>
-      <h2 style="text-align: center; font-weight: 900; margin-bottom:30px;">編輯詳細資料</h2>
+  <!-- ==================== 編輯彈窗 ==================== -->
+  <div id="editModal" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto;">
+    <div class="container" style="max-width: 900px; margin: auto; position: relative;">
+      <button onclick="closeModal()" style="position: absolute; right: 20px; top: 20px; background: var(--shine-red); color: white; border: 2px solid var(--shine-black); padding: 5px 15px; cursor: pointer; font-weight:900; font-size:1em;">關閉 X</button>
+      <h2 style="text-align: center; font-weight: 900;">修改成員資料</h2>
       <input type="hidden" id="edit-row-index">
-      
+
       <div id="modal-fields-container">
         <div id="batch-summary-info" class="hidden"></div>
 
+        <!-- 個人資料 -->
         <div class="form-section">
           <div class="section-title">個人資料</div>
           <div class="grid-row">
-            <div class="form-group"><label for="m-name">姓名</label><input type="text" id="m-name" class="v-req"></div>
-            <div class="form-group"><label for="m-gender">性別</label><select id="m-gender" class="v-req"><option>男</option><option>女</option></select></div>
-            <div class="form-group"><label for="m-birthday">生日</label><input type="date" id="m-birthday" class="v-req"></div>
-            <div class="form-group"><label for="m-phone">手機</label><input type="tel" id="m-phone" class="v-req" oninput="formatPhone(this)"></div>
-            <div class="form-group"><label for="m-email">電子郵件</label><input type="email" id="m-email" class="v-req"></div>
+            <div class="form-group"><label>姓名</label><input type="text" id="m-name" class="v-req"></div>
+            <div class="form-group"><label>性別</label><select id="m-gender" class="v-req"><option>男</option><option>女</option></select></div>
+            <div class="form-group"><label>生日</label><input type="date" id="m-birthday" class="v-req"></div>
+            <div class="form-group"><label>手機</label><input type="tel" id="m-phone" class="v-req" oninput="formatPhone(this)"></div>
+            <div class="form-group"><label>電子郵件</label><input type="email" id="m-email" class="v-req"></div>
           </div>
         </div>
 
+        <!-- 參與身分 -->
         <div class="form-section">
           <div class="section-title">參與身分</div>
           <div class="grid-row">
-            <div class="form-group"><label for="m-role">報名身分</label><select id="m-role" class="v-req"><option>國中</option><option>高中職</option><option>大專</option><option>社青</option><option>傳道</option><option>牧師</option></select></div>
-            <div class="form-group"><label for="m-school">就讀學校</label><input type="text" id="m-school" class="v-req"></div>
-            <div class="form-group"><label for="m-grade">升上年級</label><input type="text" id="m-grade" class="v-req"></div>
-            <div class="form-group"><label for="m-church">所屬教會</label><input type="text" id="m-church" class="v-req"></div>
-            <div class="form-group"><label for="m-isChristian">是否為基督徒</label><select id="m-isChristian" class="v-req"><option>是</option><option>否</option></select></div>
-            <div class="form-group"><label for="m-isBaptized">是否已受洗</label><select id="m-isBaptized" class="v-req"><option>是</option><option>否</option></select></div>
+            <div class="form-group"><label>報名身分</label><select id="m-role" class="v-req"><option>國中</option><option>高中職</option><option>大專</option><option>社青</option><option>傳道</option><option>牧師</option></select></div>
+            <div class="form-group"><label>就讀學校</label><input type="text" id="m-school" class="v-req"></div>
+            <div class="form-group"><label>升上年級</label><input type="text" id="m-grade" class="v-req"></div>
+            <div class="form-group"><label>所屬教會</label><input type="text" id="m-church" class="v-req"></div>
+            <div class="form-group"><label>是否為基督徒</label><select id="m-isChristian" class="v-req"><option>是</option><option>否</option></select></div>
+            <div class="form-group"><label>是否已受洗</label><select id="m-isBaptized" class="v-req"><option>是</option><option>否</option></select></div>
           </div>
         </div>
 
+        <!-- 緊急聯絡人 -->
         <div class="form-section">
           <div class="section-title">緊急聯絡人</div>
           <div class="grid-row">
-            <div class="form-group"><label for="m-iceName">緊急聯絡人</label><input type="text" id="m-iceName" class="v-req"></div>
-            <div class="form-group"><label for="m-iceRel">緊急連絡人關係</label><input type="text" id="m-iceRel" class="v-req"></div>
-            <div class="form-group"><label for="m-icePhone">緊急聯絡人電話</label><input type="tel" id="m-icePhone" class="v-req" oninput="formatPhone(this)"></div>
+            <div class="form-group"><label>緊急聯絡人</label><input type="text" id="m-iceName" class="v-req"></div>
+            <div class="form-group"><label>緊急連絡人關係</label><input type="text" id="m-iceRel" class="v-req"></div>
+            <div class="form-group"><label>緊急聯絡人電話</label><input type="tel" id="m-icePhone" class="v-req" oninput="formatPhone(this)"></div>
           </div>
         </div>
 
+        <!-- 營會行政 -->
         <div class="form-section">
           <div class="section-title">營會行政</div>
           <div class="grid-row">
-            <div class="form-group"><label for="m-isAttended">曾參加SHINE營會</label><select id="m-isAttended" class="v-req"><option>是</option><option>否</option></select></div>
-            <div class="form-group"><label for="m-dietary">飲食需求</label><select id="m-dietary" class="v-req"><option>葷食</option><option>蛋奶素</option><option>純素</option></select></div>
-            <div class="form-group" style="grid-column: 1 / -1;"><label for="m-medical" >特殊狀況與注意事項</label><input type="text" id="m-medical" class="v-req"></div>
+            <div class="form-group"><label>曾參加SHINE營會</label><select id="m-isAttended" class="v-req"><option>是</option><option>否</option></select></div>
+            <div class="form-group"><label>飲食需求</label><select id="m-dietary" class="v-req"><option>葷食</option><option>蛋奶素</option><option>純素</option></select></div>
+            <div class="form-group" style="grid-column: 1 / -1;"><label>特殊狀況與注意事項</label><input type="text" id="m-medical" class="v-req"></div>
           </div>
         </div>
 
-        <div class="form-section" style="background: #fff9c4; border: 3px solid var(--shine-yellow);">
-          <div class="section-title" style="background: var(--shine-yellow); color: black;">資料異動備註</div>
+        <!-- 資料異動備註 -->
+        <div class="form-section note-section">
+          <div class="section-title note-section-title">資料異動備註</div>
           <div class="form-group">
             <textarea id="m-adminNote" style="height: 60px;" placeholder="請輸入異動說明..."></textarea>
           </div>
         </div>
       </div>
 
-      <div class="form-section" id="finance-module" style="background: #e3f2fd; border: 3px solid #2196f3;">
-        <div class="section-title" style="background: #2196f3; color: white;">💰 財務繳費登記</div>
+      <!-- 財務登記模組 -->
+      <div class="form-section" id="finance-module" style="background: #e3f2fd; border: 3px solid var(--shine-blue);">
+        <div class="section-title finance-section-title">💰 財務繳費登記</div>
         <div class="grid-row">
-          <div class="form-group"><label>報名狀態</label>
+          <div class="form-group">
+            <label>報名狀態</label>
             <select id="m-status">
               <option value="尚未繳費">尚未繳費</option>
               <option value="已繳訂金">已繳訂金</option>
@@ -279,7 +638,8 @@
           </div>
           <div class="form-group"><label>已繳金額</label><input type="number" id="m-paid"></div>
           <div class="form-group"><label>補助金額</label><input type="number" id="m-subsidy"></div>
-          <div class="form-group"><label>繳費管道</label>
+          <div class="form-group">
+            <label>繳費管道</label>
             <select id="m-payMethod">
               <option value="匯款">匯款</option>
               <option value="現金">現金</option>
@@ -293,18 +653,18 @@
       </div>
 
       <div style="text-align: center; margin-top: 30px; margin-bottom: 40px;">
-        <button class="btn btn-next" onclick="submitEdit()">儲存變更紀錄</button>
+        <button class="btn btn-next" style="font-size:1.1em; padding:15px 40px;" onclick="submitEdit()">確認儲存修改</button>
       </div>
     </div>
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwOylaunhUfkTLUygJqXj0En1qGwXBXg66c2Qk21Yb8KhwR3ybJvQ2GAbYegiZt1xc/exec"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwOylaunhUfkTLUygJqXj0En1qGwXBXg66c2Qk21Yb8KhwR3ybJvQ2GAbYegiZt1xc/exec";
     let fullData = [];
     let currentTab = 'edit';
     let searchTimer;
     let isModalDirty = false;
-    let batchSelectedRows = []; // 儲存批次勾選的 row IDs
+    let batchSelectedRows = [];
     let currentDisplayData = [];
 
     // --- API 核心 ---
@@ -324,17 +684,18 @@
     async function doLogin() {
       const u = document.getElementById('u_name').value;
       const p = document.getElementById('u_pass').value;
+      if (!u || !p) { alert("請填寫帳號與密碼"); return; }
       const res = await api({ action: 'login', username: u, password: p });
       if (res && res.success) {
         sessionStorage.setItem('admin_token', res.token);
-        sessionStorage.setItem('admin_name', res.userName); 
+        sessionStorage.setItem('admin_name', res.userName);
         document.getElementById('auth-block').classList.add('hidden');
         document.getElementById('admin-dashboard').classList.remove('hidden');
-        document.getElementById('dashboard-title').innerText = `ADMIN: ${res.userName}`;
+        document.getElementById('dashboard-title').innerText = `管理人員：${res.userName}`;
         fetchData();
         attachModalListener();
       } else {
-        alert("驗證失敗");
+        alert("❌ 驗證失敗，請確認帳號密碼");
       }
     }
 
@@ -346,27 +707,27 @@
       }
     }
 
+    // --- 分頁切換 ---
     function switchMainTab(tab) {
       currentTab = tab;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('tab-' + tab).classList.add('active');
-      
+
       const isStats = (tab === 'stats');
       document.getElementById('search-section').classList.toggle('hidden', isStats);
       document.getElementById('section-list').classList.toggle('hidden', isStats);
       document.getElementById('section-stats').classList.toggle('hidden', !isStats);
-      
-      // 批次按鈕隱藏重設
-      updateBatchUI();
 
+      updateBatchUI();
       if (isStats) refreshStats(); else handleSearch();
     }
 
+    // --- 搜尋 ---
     function handleSearch() {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {
-        const key = document.getElementById('search-input').value.toLowerCase();
-        let filtered = fullData.filter(m => 
+        const key = (document.getElementById('search-input').value || '').toLowerCase();
+        let filtered = fullData.filter(m =>
           (m.name && m.name.toLowerCase().includes(key)) ||
           (m.phone && m.phone.includes(key)) ||
           (m.church && m.church.toLowerCase().includes(key)) ||
@@ -377,203 +738,205 @@
       }, 200);
     }
 
+    function filterAndRender() {
+      const searchTerm = (document.getElementById('list-search')?.value || '').toLowerCase();
+      const filtered = fullData.filter(m =>
+        m.name.toLowerCase().includes(searchTerm) ||
+        (m.church && m.church.toLowerCase().includes(searchTerm)) ||
+        (m.contactName && m.contactName.toLowerCase().includes(searchTerm))
+      );
+      renderList(filtered);
+    }
 
-    // --- 5. 排序邏輯：個人報名最前，團體按窗口聚集 ---
+    // --- 排序 ---
     function sortData(data) {
       return [...data].sort((a, b) => {
-        // 使用 W 欄 (contactName) 作為分群依據
         const winA = (a.contactName || "").trim();
         const winB = (b.contactName || "").trim();
-        
-        // 1. 個人報名 (窗口姓名為空) 置頂排序
         if (!winA && winB) return -1;
         if (!winB && winA) return 1;
-        
-        // 2. 團報名單按「窗口姓名」進行字母/中文排序
         if (winA !== winB) return winA.localeCompare(winB);
-        
-        // 3. 同一窗口內，按「教會 (church)」排序 (滿足你對教會排序的期待)
         const churchA = (a.church || "").trim();
         const churchB = (b.church || "").trim();
         if (churchA !== churchB) return churchA.localeCompare(churchB);
-
-        // 4. 最後才是姓名排序
         return a.name.localeCompare(b.name);
       });
     }
 
-    function filterAndRender() {
-  const searchTerm = document.getElementById('list-search')?.value.toLowerCase() || "";
-  // 從原始 globalData (由後端傳回的資料) 進行過濾
-  const filtered = allMemberData.filter(m => 
-    m.name.toLowerCase().includes(searchTerm) || 
-    (m.church && m.church.toLowerCase().includes(searchTerm)) ||
-    (m.contactName && m.contactName.toLowerCase().includes(searchTerm))
-  );
-  renderList(filtered);
-}
-    
-    // --- 渲染清單 (包含模式判斷與 1, 2, 3, 4, 5 項修正) ---
+    // --- 清單渲染 ---
     function renderList(data) {
-  const container = document.getElementById('section-list');
-  if (!container) return;
+      const container = document.getElementById('section-list');
+      if (!container) return;
 
-  // 排序：個人置頂 > 窗口 > 教會
-  const sorted = sortData(data);
-  currentDisplayData = sorted; 
+      const sorted = sortData(data);
+      currentDisplayData = sorted;
 
-  if (currentTab === 'finance') {
-    container.classList.add('finance-mode');
-    
-    // 建立表格骨架
-    let html = `
-      <div class="search-container">
-        <input type="text" id="list-search" placeholder="🔍 快速搜尋姓名、教會或窗口..." oninput="filterAndRender()">
-        <div id="batch-status-bar" class="hidden">
-          已選取 <span id="batch-count" style="color:var(--shine-red)">0</span> 筆資料
-        </div>
-      </div>
-      <table class="finance-table">
-        <thead>
-          <tr>
-            <th style="width:40px;"><input type="checkbox" id="main-select-all" onchange="selectAll(this)"></th>
-            <th>姓名</th><th>教會</th><th>狀態</th>
-            <th style="text-align:right;">應收</th><th style="text-align:right;">補助</th>
-            <th style="text-align:right;">已繳</th><th style="text-align:right;">待繳</th>
-            <th>備註</th>
-          </tr>
-        </thead>
-        <tbody id="finance-body"></tbody>
-      </table>`;
-    
-    container.innerHTML = html;
-    const tbody = document.getElementById('finance-body');
-    
-    let lastWindow = null;
-    let gDue = 0, gPaid = 0, gSub = 0;
-    let groupIndex = 0;
-    let rowsHtml = "";
+      if (currentTab === 'finance') {
+        container.classList.add('finance-mode');
 
-    sorted.forEach((m, index) => {
-      const currentWindow = (m.contactName || "").trim();
-      const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
-      const isComplete = (balance <= 0);
+        let html = `
+          <div class="search-container">
+            <input type="text" id="list-search" placeholder="🔍 快速搜尋姓名、教會或窗口..." oninput="filterAndRender()">
+            <div id="batch-status-bar" class="hidden">
+              已選取 <span id="batch-count" style="color:var(--shine-red)">0</span> 筆資料
+            </div>
+          </div>
+          <table class="finance-table">
+            <thead>
+              <tr>
+                <th style="width:40px;"><input type="checkbox" id="main-select-all" onchange="selectAll(this)"></th>
+                <th>姓名</th><th>教會</th><th>狀態</th>
+                <th style="text-align:right;">應收</th><th style="text-align:right;">補助</th>
+                <th style="text-align:right;">已繳</th><th style="text-align:right;">待繳</th>
+                <th>備註</th>
+              </tr>
+            </thead>
+            <tbody id="finance-body"></tbody>
+          </table>`;
 
-      // 窗口切換時插入小計
-      if (lastWindow !== null && currentWindow !== lastWindow && lastWindow !== "") {
-        rowsHtml += renderGroupSummaryHtml(lastWindow, gDue, gPaid, gSub, groupIndex);
-        gDue = 0; gPaid = 0; gSub = 0;
-        groupIndex++;
+        container.innerHTML = html;
+        const tbody = document.getElementById('finance-body');
+
+        let lastWindow = null;
+        let gDue = 0, gPaid = 0, gSub = 0;
+        let groupIndex = 0;
+        let rowsHtml = "";
+
+        sorted.forEach((m, index) => {
+          const currentWindow = (m.contactName || "").trim();
+          const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
+          const isComplete = (balance <= 0);
+
+          if (lastWindow !== null && currentWindow !== lastWindow && lastWindow !== "") {
+            rowsHtml += renderGroupSummaryHtml(lastWindow, gDue, gPaid, gSub, groupIndex);
+            gDue = 0; gPaid = 0; gSub = 0;
+            groupIndex++;
+          }
+
+          if (currentWindow !== lastWindow) {
+            const isIndiv = currentWindow === "";
+            rowsHtml += `
+              <tr class="group-header" ${isIndiv ? '' : `onclick="toggleGroup(${groupIndex}, this)"`}>
+                <td colspan="9">
+                  ${isIndiv ? '📍' : '<span class="toggle-icon">▼</span>'}
+                  <strong>${isIndiv ? "個人報名區域" : "窗口：" + currentWindow}</strong>
+                  ${(!isIndiv && m.contactPhone) ? `<span class="header-phone">📱 ${m.contactPhone}</span>` : ''}
+                </td>
+              </tr>`;
+            lastWindow = currentWindow;
+          }
+
+          if (currentWindow !== "") {
+            gDue += Number(m.totalDue || 0);
+            gPaid += Number(m.paid || 0);
+            gSub += Number(m.subsidy || 0);
+          }
+
+          const rowClass = currentWindow === "" ? "" : `group-row-${groupIndex}`;
+          rowsHtml += `
+            <tr onclick="openAction(${m.row})" class="${rowClass}">
+              <td onclick="event.stopPropagation()">
+                <input type="checkbox" class="row-checkbox" value="${m.row}" onchange="updateBatchUI()">
+              </td>
+              <td><strong>${m.name}</strong></td>
+              <td>${m.church || ''}</td>
+              <td><span class="badge ${isComplete ? 'bg-green' : 'bg-red'}">${isComplete ? '完成' : '待繳'}</span></td>
+              <td style="text-align:right;">${m.totalDue || 0}</td>
+              <td style="text-align:right;">${m.subsidy || 0}</td>
+              <td style="text-align:right; color:var(--shine-blue);">${m.paid || 0}</td>
+              <td style="text-align:right;" class="${balance > 0 ? 'balance-red' : 'balance-green'}">${balance}</td>
+              <td class="note-cell">${m.payNote || ''}</td>
+            </tr>`;
+
+          if (index === sorted.length - 1 && currentWindow !== "") {
+            rowsHtml += renderGroupSummaryHtml(currentWindow, gDue, gPaid, gSub, groupIndex);
+          }
+        });
+
+        tbody.innerHTML = rowsHtml;
+
+      } else {
+        // 卡片模式 (資料編修)
+        container.classList.remove('finance-mode');
+        if (sorted.length === 0) {
+          container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; border:2px dashed var(--shine-gray); color:var(--shine-gray); font-weight:900;">📭 無符合條件的資料</div>`;
+          return;
+        }
+        container.innerHTML = sorted.map(m => {
+          const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
+          return `
+            <div class="item-card" onclick="openAction(${m.row})">
+              <div class="card-header">
+                <strong style="font-size:1.1em;">${m.name}</strong>
+                <span style="font-size:11px; background:var(--shine-black); color:var(--shine-lime); padding:2px 6px; font-weight:900;">#${m.row}</span>
+              </div>
+              <div class="window-label">窗口：${m.contactName || '個人'}</div>
+              <div style="margin-top:8px; font-size:14px; color:#555;">⛪ ${m.church || '未填教會'}</div>
+              <div style="margin-top:10px; border-top:1px dashed var(--shine-gray); padding-top:8px; font-weight:900; font-size:13px;">
+                餘額：<span class="${balance > 0 ? 'balance-red' : 'balance-green'}">$${balance}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
       }
-
-      // 插入窗口標頭
-      if (currentWindow !== lastWindow) {
-        const isIndiv = currentWindow === "";
-        rowsHtml += `
-          <tr class="group-header" ${isIndiv ? '' : `onclick="toggleGroup(${groupIndex}, this)"`}>
-            <td colspan="9">
-              ${isIndiv ? '📍' : '<span class="toggle-icon">▼</span>'}
-              <strong>${isIndiv ? "個人報名區域" : "窗口：" + currentWindow}</strong>
-              ${(!isIndiv && m.contactPhone) ? `<span class="header-phone">📱 ${m.contactPhone}</span>` : ''}
-            </td>
-          </tr>`;
-        lastWindow = currentWindow;
-      }
-
-      if (currentWindow !== "") {
-        gDue += Number(m.totalDue || 0); gPaid += Number(m.paid || 0); gSub += Number(m.subsidy || 0);
-      }
-
-      // 成員資料列
-      const rowClass = currentWindow === "" ? "" : `group-row-${groupIndex}`;
-      rowsHtml += `
-        <tr onclick="openAction(${m.row})" class="${rowClass}">
-          <td onclick="event.stopPropagation()">
-            <input type="checkbox" class="row-checkbox" value="${m.row}" onchange="updateBatchUI()">
-          </td>
-          <td><strong>${m.name}</strong></td>
-          <td>${m.church || ''}</td>
-          <td><span class="badge ${isComplete ? 'bg-green' : 'bg-red'}">${isComplete ? '完成' : '待繳'}</span></td>
-          <td style="text-align:right;">${m.totalDue}</td>
-          <td style="text-align:right;">${m.subsidy}</td>
-          <td style="text-align:right; color:blue;">${m.paid}</td>
-          <td style="text-align:right;" class="${balance > 0 ? 'balance-red' : 'balance-green'}">${balance}</td>
-          <td class="note-cell">${m.payNote || ''}</td>
-        </tr>`;
-
-      if (index === sorted.length - 1 && currentWindow !== "") {
-        rowsHtml += renderGroupSummaryHtml(currentWindow, gDue, gPaid, gSub, groupIndex);
-      }
-    });
-
-    tbody.innerHTML = rowsHtml;
-  } else {
-    // 卡片模式 (編修模式)
-    container.classList.remove('finance-mode');
-    container.innerHTML = sorted.map(m => `
-      <div class="item-card" onclick="openAction(${m.row})">
-        <div class="card-top">
-          <strong>${m.name}</strong>
-          <span class="row-id">#${m.row}</span>
-        </div>
-        <div class="window-label">窗口：${m.contactName || '個人'}</div>
-        <div class="card-info">
-          <div>⛪ ${m.church || '未填教會'}</div>
-        </div>
-        <div class="card-footer">
-          餘額：<span class="${(m.totalDue-m.paid-m.subsidy)>0?'balance-red':'balance-green'}">$${m.totalDue-m.paid-m.subsidy}</span>
-        </div>
-      </div>
-    `).join('');
-  }
-}
-
-// 輔助：渲染小計 HTML
-function renderGroupSummaryHtml(name, due, paid, sub, idx) {
-  const bal = due - paid - sub;
-  return `
-    <tr class="table-summary-row group-row-${idx}">
-      <td colspan="3" style="text-align:right; font-weight:900;">📊 [${name}] 窗口小計：</td>
-      <td>-</td>
-      <td style="text-align:right;">$${due}</td>
-      <td style="text-align:right;">$${sub}</td>
-      <td style="text-align:right; color:blue;">$${paid}</td>
-      <td style="text-align:right;" class="${bal > 0 ? 'balance-red' : 'balance-green'}">$${bal}</td>
-      <td>-</td>
-    </tr>`;
-}
-    // --- 批次功能 ---
-    // 修正：複選 UI 觸發
-function updateBatchUI() {
-  const checked = document.querySelectorAll('.row-checkbox:checked');
-  const statusBar = document.getElementById('batch-status-bar');
-  const batchBtn = document.querySelector('.btn-batch'); // 這是你原本就有的黃色按鈕
-  
-  if (checked.length > 0) {
-    if (statusBar) statusBar.classList.remove('hidden');
-    if (batchBtn) {
-      batchBtn.style.display = 'inline-flex';
-      batchBtn.innerHTML = `🚀 批次編修 (${checked.length} 筆)`;
     }
-    document.getElementById('batch-count').innerText = checked.length;
-  } else {
-    if (statusBar) statusBar.classList.add('hidden');
-    if (batchBtn) batchBtn.style.display = 'none';
-  }
-}
 
-    // 修正：全選邏輯 (只選目前看得到的)
-function selectAll(mainBox) {
-  const visibleCheckboxes = document.querySelectorAll('tr:not(.hidden) .row-checkbox');
-  visibleCheckboxes.forEach(cb => cb.checked = mainBox.checked);
-  updateBatchUI();
-}
+    // --- 小計 HTML ---
+    function renderGroupSummaryHtml(name, due, paid, sub, idx) {
+      const bal = due - paid - sub;
+      return `
+        <tr class="table-summary-row group-row-${idx}">
+          <td colspan="3" style="text-align:right; font-weight:900;">📊 [${name}] 窗口小計：</td>
+          <td>-</td>
+          <td style="text-align:right;">$${due}</td>
+          <td style="text-align:right;">$${sub}</td>
+          <td style="text-align:right; color:var(--shine-blue);">$${paid}</td>
+          <td style="text-align:right;" class="${bal > 0 ? 'balance-red' : 'balance-green'}">$${bal}</td>
+          <td>-</td>
+        </tr>`;
+    }
+
+    // --- 收合切換 ---
+    function toggleGroup(idx, headerEl) {
+      const rows = document.querySelectorAll(`.group-row-${idx}`);
+      const icon = headerEl.querySelector('.toggle-icon');
+      rows.forEach(row => row.classList.toggle('hidden'));
+      if (icon) {
+        const isCollapsed = rows[0].classList.contains('hidden');
+        icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+      }
+    }
+
+    // --- 批次功能 ---
+    function updateBatchUI() {
+      const checked = document.querySelectorAll('.row-checkbox:checked');
+      const statusBar = document.getElementById('batch-status-bar');
+      const batchBtn = document.getElementById('btn-batch-edit');
+
+      if (checked.length > 0) {
+        if (statusBar) statusBar.classList.remove('hidden');
+        if (batchBtn) {
+          batchBtn.style.display = 'inline-flex';
+          batchBtn.innerHTML = `⚡ 批次登記選中項目 (${checked.length})`;
+        }
+        const countEl = document.getElementById('batch-count');
+        if (countEl) countEl.innerText = checked.length;
+      } else {
+        if (statusBar) statusBar.classList.add('hidden');
+        if (batchBtn) batchBtn.style.display = 'none';
+      }
+    }
+
+    function selectAll(mainBox) {
+      const visibleCheckboxes = document.querySelectorAll('tr:not(.hidden) .row-checkbox');
+      visibleCheckboxes.forEach(cb => cb.checked = mainBox.checked);
+      updateBatchUI();
+    }
 
     function openBatchEdit() {
       batchSelectedRows = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
       if (batchSelectedRows.length === 0) return;
 
-      // 計算財務匯總
       let totalDue = 0, totalPaid = 0, totalBalance = 0;
       batchSelectedRows.forEach(id => {
         const m = fullData.find(x => String(x.row) === id);
@@ -584,60 +947,31 @@ function selectAll(mainBox) {
         }
       });
 
-      // UI 調整
       document.getElementById('edit-row-index').value = "BATCH";
       document.querySelectorAll('#modal-fields-container .form-section').forEach(sec => sec.classList.add('hidden'));
       document.getElementById('finance-module').classList.remove('hidden');
-      
+
       const summary = document.getElementById('batch-summary-info');
       summary.classList.remove('hidden');
       summary.innerHTML = `
-        <div style="font-size:1.1em; color:var(--shine-blue); border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:10px;">📊 批次統計：選中 ${batchSelectedRows.length} 人</div>
+        <div style="font-size:1.1em; color:var(--shine-blue); border-bottom:2px solid var(--shine-black); padding-bottom:5px; margin-bottom:10px;">📊 批次統計：選中 ${batchSelectedRows.length} 人</div>
         <div style="display:flex; justify-content:space-between;"><span>應繳總額：</span><span>$${totalDue}</span></div>
-        <div style="display:flex; justify-content:space-between; color:red;"><span>待繳餘額：</span><span>$${totalBalance}</span></div>
-        <div style="margin-top:10px; background:#fff; padding:8px; border:1px solid #000; font-size:13px; font-weight:normal;">
+        <div style="display:flex; justify-content:space-between; color:var(--shine-red);"><span>待繳餘額：</span><span>$${totalBalance}</span></div>
+        <div style="margin-top:10px; background:white; padding:8px; border:2px solid var(--shine-black); font-size:13px; font-weight:normal;">
           💡 <strong>寫入規則：</strong> 下方填寫的金額會【分別套用】給每個人。<br>
           例如填寫 1500，這 ${batchSelectedRows.length} 人每個人都會被記錄已繳 1500。
-        </div>
-      `;
+        </div>`;
 
-      // 清空預設值
       document.getElementById('m-status').value = "已繳全額";
-      document.getElementById('m-paid').value = ""; // 強制留空
+      document.getElementById('m-paid').value = "";
       document.getElementById('m-payNote').value = "團體批次繳費";
-      document.getElementById('m-receiver').value = sessionStorage.getItem('admin_name');
+      document.getElementById('m-receiver').value = sessionStorage.getItem('admin_name') || "";
 
       document.querySelector('#editModal h2').innerText = "⚡ 批次繳費登記";
       document.getElementById('editModal').classList.remove('hidden');
       isModalDirty = false;
     }
 
-
-    // 專用的收合切換函式
-    function toggleGroup(idx, headerEl) {
-  const rows = document.querySelectorAll(`.group-row-${idx}`);
-  const icon = headerEl.querySelector('.toggle-icon');
-  rows.forEach(row => row.classList.toggle('hidden'));
-  if (icon) {
-    const isCollapsed = rows[0].classList.contains('hidden');
-    icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
-  }
-}
-
-    function renderGroupSummary(name, due, paid, sub, idx) {
-      const bal = due - paid - sub;
-      // 小計列也必須帶有相同的 group-row-${idx} 類別，才會一起被收合
-      return `
-        <tr class="table-summary-row group-row-${idx}">
-          <td colspan="3" style="text-align:right; font-weight:900;">📊 [${name}] 窗口小計：</td>
-          <td>-</td>
-          <td style="text-align:right;">$${due}</td>
-          <td style="text-align:right;">$${sub}</td>
-          <td style="text-align:right; color:blue;">$${paid}</td>
-          <td style="text-align:right;" class="${bal > 0 ? 'balance-red' : 'balance-green'}">$${bal}</td>
-          <td>-</td>
-        </tr>`;
-    }
     // --- 單人編輯開啟 ---
     function openAction(rowId) {
       const m = fullData.find(item => item.row === rowId);
@@ -645,15 +979,13 @@ function selectAll(mainBox) {
 
       document.getElementById('edit-row-index').value = m.row;
       document.getElementById('batch-summary-info').classList.add('hidden');
-      
-      // 填入所有欄位
+
       const fields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','adminNote','status','paid','subsidy','payMethod','receiver','payNote'];
       fields.forEach(f => {
         const el = document.getElementById('m-' + f);
         if (el) el.value = m[f] || (el.tagName === 'SELECT' ? el.options[0].value : "");
       });
 
-      // 根據分頁顯示區塊
       const allSections = document.querySelectorAll('#modal-fields-container .form-section');
       const financeSec = document.getElementById('finance-module');
       if (currentTab === 'finance') {
@@ -663,36 +995,35 @@ function selectAll(mainBox) {
         allSections.forEach(s => s.classList.remove('hidden'));
       }
 
-      document.querySelector('#editModal h2').innerText = `📝 編輯：${m.name}`;
+      document.querySelector('#editModal h2').innerText = `修改成員資料：${m.name}`;
       document.getElementById('editModal').classList.remove('hidden');
       isModalDirty = false;
     }
 
     function closeModal() {
-      if (isModalDirty && !confirm("尚未儲存，確定關閉？")) return;
+      if (isModalDirty && !confirm("⚠️ 尚未儲存，確定關閉？")) return;
       document.getElementById('editModal').classList.add('hidden');
+      isModalDirty = false;
     }
 
-    // --- 儲存實作 ---
+    // --- 儲存 ---
     async function submitEdit() {
       const rowId = document.getElementById('edit-row-index').value;
       const inputPaid = document.getElementById('m-paid').value;
 
-      // 批次模式邏輯
       if (rowId === "BATCH") {
         if (!inputPaid || Number(inputPaid) <= 0) {
-          alert("❌ 批次模式下必須填寫「已繳金額」。若不改動金額請關閉後個別編輯。");
+          alert("❌ 批次模式下必須填寫「已繳金額」。");
           return;
         }
-
         if (!confirm(`確定要將這 ${batchSelectedRows.length} 位成員，每位都登記已繳 $${inputPaid} 元嗎？`)) return;
 
         const updates = batchSelectedRows.map(id => {
           const m = fullData.find(x => String(x.row) === id);
           return {
             row: id,
-            data: { 
-              ...m, 
+            data: {
+              ...m,
               status: document.getElementById('m-status').value,
               paid: Number(inputPaid),
               subsidy: Number(document.getElementById('m-subsidy').value || 0),
@@ -705,28 +1036,30 @@ function selectAll(mainBox) {
         });
 
         const res = await api({ action: 'batchUpdate', token: sessionStorage.getItem('admin_token'), updates, adminName: sessionStorage.getItem('admin_name') });
-        if (res.success) { alert("✅ 批次更新成功"); closeModal(); fetchData(); }
+        if (res && res.success) { alert("✅ 批次更新成功！"); closeModal(); fetchData(); }
         return;
       }
 
-      // 單人模式邏輯 (僅檢查可見的必填項)
+      // 單人模式必填驗證
       const reqs = Array.from(document.querySelectorAll('#editModal .v-req')).filter(el => el.offsetParent !== null);
       let missing = [];
       reqs.forEach(el => {
-        if (!el.value.trim() && el.id !== 'm-medical') {
-          missing.push(el.closest('.form-group').querySelector('label').innerText);
-          el.style.border = "2px solid red";
-        } else { el.style.border = "2px solid black"; }
+        el.style.border = "2px solid var(--shine-black)";
+        const val = el.value ? el.value.trim() : "";
+        if (val === "" && el.id !== 'm-medical') {
+          const labelEl = el.closest('.form-group')?.querySelector('label');
+          missing.push(labelEl ? labelEl.innerText : el.id);
+          el.style.setProperty('border', '2px solid var(--shine-red)', 'important');
+        }
       });
-
-      if (missing.length > 0) { alert("未填必填項：" + missing.join(", ")); return; }
+      if (missing.length > 0) { alert("⚠️ 請填寫以下必填欄位：\n• " + missing.join("\n• ")); return; }
 
       const updateData = {};
       const allFields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','adminNote','status','paid','subsidy','payMethod','receiver','payNote'];
-      allFields.forEach(f => updateData[f] = document.getElementById('m-' + f).value);
+      allFields.forEach(f => updateData[f] = document.getElementById('m-' + f)?.value || "");
 
       const res = await api({ action: 'updateParticipant', token: sessionStorage.getItem('admin_token'), row: rowId, data: updateData, adminName: sessionStorage.getItem('admin_name') });
-      if (res.success) { alert("✅ 資料已同步"); isModalDirty = false; closeModal(); fetchData(); }
+      if (res && res.success) { alert("✅ 資料已同步！"); isModalDirty = false; closeModal(); fetchData(); }
     }
 
     // --- 統計 ---
@@ -741,10 +1074,10 @@ function selectAll(mainBox) {
       const container = document.getElementById('stats-container');
       container.innerHTML = '';
       const configs = [
-        { title: "👫 性別 - 報名管道", key: "gender" },
-        { title: "🎓 報名身分 - 報名管道", key: "role" },
-        { title: "✝️ 基督徒 - 報名管道", key: "christian" },
-        { title: "⛪ 所屬教會 - 報名管道", key: "church" }
+        { title: "👫 性別 × 報名管道", key: "gender" },
+        { title: "🎓 報名身分 × 報名管道", key: "role" },
+        { title: "✝️ 基督徒 × 報名管道", key: "christian" },
+        { title: "⛪ 所屬教會 × 報名管道", key: "church" }
       ];
       configs.forEach(conf => {
         if (data[conf.key]) {
@@ -780,14 +1113,27 @@ function selectAll(mainBox) {
       return html;
     }
 
+    // --- 工具函式 ---
     function formatPhone(obj) {
-      let val = obj.value.replace(/\D/g, ''); 
-      if (val.length > 4) obj.value = val.slice(0, 4) + '-' + val.slice(4, 10);
+      let val = obj.value.replace(/\D/g, '');
+      if (val.length > 10) val = val.slice(0, 10);
+      if (val.length > 4) obj.value = val.slice(0, 4) + '-' + val.slice(4);
       else obj.value = val;
     }
+
     function attachModalListener() {
-      document.getElementById('editModal').addEventListener('change', () => isModalDirty = true);
+      const modal = document.getElementById('editModal');
+      if (!modal.dataset.listenerAttached) {
+        modal.addEventListener('change', (e) => {
+          if (e.target.matches('input, select, textarea')) isModalDirty = true;
+        });
+        modal.dataset.listenerAttached = "true";
+      }
     }
+
+    window.addEventListener('beforeunload', (e) => {
+      if (isModalDirty) { e.preventDefault(); e.returnValue = ''; }
+    });
   </script>
 </body>
 </html>
