@@ -118,14 +118,16 @@
     .collapsed-row { display: none !important; }
     
     .table-summary-row { background-color: #f8f9fa !important; font-weight: bold; border-top: 2px solid #333; border-bottom: 2px solid #333; }
-.toggle-icon {
-      display: inline-block;
-      transition: transform 0.2s ease;
-      margin-right: 8px;
-      font-style: normal;
-    }
+/* 強化收合視覺 */
+.toggle-icon { display: inline-block; transition: transform 0.2s; margin-right: 10px; font-weight: bold; }
+.header-phone { margin-left: 15px; font-size: 12px; font-weight: normal; color: #666; }
     .balance-red { color: var(--shine-red); font-weight: 900; }
     .balance-green { color: #2e7d32; font-weight: 900; }
+    /* 備註欄單行化 */
+.note-cell { 
+  font-size: 11px; color: #666; max-width: 150px; 
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
+}
 
     /* 統計表格 */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; }
@@ -142,12 +144,17 @@
     .bg-green { background: var(--shine-lime); color: black; }
     .bg-yellow { background: var(--shine-yellow); color: black; }
 
-    .search-container { margin-bottom: 20px; position: sticky; top: 0; z-index: 10; background: #f0f0f0; padding: 10px 0; }
+    .search-container { 
+  display: flex; flex-direction: column; gap: 10px; 
+  margin-bottom: 15px; position: sticky; top: 0; background: #f0f0f0; z-index: 5; padding: 10px 0;
+}
     #list-search { 
       padding: 12px 20px; border: 3px solid var(--shine-black); 
       box-shadow: 6px 6px 0px var(--shine-black); font-weight: 900; 
     }
-
+#batch-status-bar { 
+  background: var(--shine-lime); border: 2px solid #000; padding: 5px 15px; font-weight: 900; 
+}
     #batch-summary-info { background: #fff9c4; padding: 15px; border: 3px dashed #000; margin-bottom: 20px; font-weight: 900; }
     .hidden { display: none !important; }
     .form-group { margin-bottom: 15px; }
@@ -301,6 +308,7 @@
     let searchTimer;
     let isModalDirty = false;
     let batchSelectedRows = []; // 儲存批次勾選的 row IDs
+    let currentDisplayData = [];
 
     // --- API 核心 ---
     async function api(payload) {
@@ -397,166 +405,170 @@
       });
     }
 
-    function filterAndRender(data) {
-      const searchTerm = document.getElementById('list-search')?.value.toLowerCase() || "";
-      const filtered = data.filter(m => 
-        m.name.toLowerCase().includes(searchTerm) || 
-        (m.church && m.church.toLowerCase().includes(searchTerm)) ||
-        (m.contactName && m.contactName.toLowerCase().includes(searchTerm))
-      );
-      renderList(filtered);
-    }
+    function filterAndRender() {
+  const searchTerm = document.getElementById('list-search')?.value.toLowerCase() || "";
+  // 從原始 globalData (由後端傳回的資料) 進行過濾
+  const filtered = allMemberData.filter(m => 
+    m.name.toLowerCase().includes(searchTerm) || 
+    (m.church && m.church.toLowerCase().includes(searchTerm)) ||
+    (m.contactName && m.contactName.toLowerCase().includes(searchTerm))
+  );
+  renderList(filtered);
+}
     
     // --- 渲染清單 (包含模式判斷與 1, 2, 3, 4, 5 項修正) ---
     function renderList(data) {
-      const container = document.getElementById('section-list');
-      const sorted = sortData(data);
+  const container = document.getElementById('section-list');
+  if (!container) return;
 
-      if (currentTab === 'finance') {
-        container.classList.add('finance-mode');
-        
-        let html = `
-          <div class="search-container">
-            <input type="text" id="list-search" placeholder="🔍 輸入姓名、教會或窗口搜尋..." oninput="filterAndRender(globalData)">
-          </div>
-          <table class="finance-table">
-            <thead>
-              <tr>
-                <th style="width:40px;"><input type="checkbox" onchange="selectAll(this)"></th>
-                <th>姓名</th><th>教會</th><th>狀態</th>
-                <th style="text-align:right;">應收</th><th style="text-align:right;">補助</th>
-                <th style="text-align:right;">已繳</th><th style="text-align:right;">待繳</th>
-                <th>備註</th>
-              </tr>
-            </thead>
-            <tbody>`;
-        
-        let lastWindow = null;
-        let gDue = 0, gPaid = 0, gSub = 0;
-        let groupIndex = 0; // 用於識別唯一的群組
+  // 排序：個人置頂 > 窗口 > 教會
+  const sorted = sortData(data);
+  currentDisplayData = sorted; 
 
-        sorted.forEach((m, index) => {
-          const currentWindow = (m.contactName || "").trim();
-          const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
-          const isComplete = (balance <= 0);
-
-          // 【修正點 1】偵測窗口切換，先插入「前一個」窗口的小計列
-          if (lastWindow !== null && currentWindow !== lastWindow && lastWindow !== "") {
-            html += renderGroupSummary(lastWindow, gDue, gPaid, gSub, groupIndex);
-            gDue = 0; gPaid = 0; gSub = 0;
-            groupIndex++; // 完成一個群組後，Index 往下加 1
-          }
-
-          // 【修正點 2】插入分群標頭
-          if (currentWindow !== lastWindow) {
-            const isIndiv = currentWindow === "";
-            // 如果是個人報名，我們不給它收合 index (或者給一個特殊值)
-            const clickAction = isIndiv ? "" : `onclick="toggleGroup(${groupIndex}, this)"`;
-            
-            html += `
-              <tr class="group-header" ${clickAction}>
-                <td colspan="9">
-                  ${isIndiv ? '' : '<span class="toggle-icon">▼</span>'}
-                  <strong>${isIndiv ? "📍 個人報名區域" : "📦 窗口：" + currentWindow}</strong>
-                  ${(!isIndiv && m.contactPhone) ? `<span style="margin-left:15px; font-size:12px; font-weight:normal; color:#555;">📱 ${m.contactPhone}</span>` : ''}
-                </td>
-              </tr>`;
-            lastWindow = currentWindow;
-          }
-
-          // 累加數值
-          if (currentWindow !== "") {
-            gDue += Number(m.totalDue || 0);
-            gPaid += Number(m.paid || 0);
-            gSub += Number(m.subsidy || 0);
-          }
-
-          // 【修正點 3】給予成員列特定的群組類別 (個人報名不加收合類別)
-          const rowClass = currentWindow === "" ? "" : `group-row-${groupIndex}`;
-          
-          html += `
-            <tr onclick="openAction(${m.row})" class="${rowClass}">
-              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="${m.row}"></td>
-              <td><strong>${m.name}</strong></td>
-              <td>${m.church || ''}</td>
-              <td><span class="badge ${isComplete ? 'bg-green' : 'bg-red'}">${isComplete ? '完成' : '待繳'}</span></td>
-              <td style="text-align:right;">${m.totalDue}</td>
-              <td style="text-align:right;">${m.subsidy}</td>
-              <td style="text-align:right; color:blue;">${m.paid}</td>
-              <td style="text-align:right;" class="${balance > 0 ? 'balance-red' : 'balance-green'}">${balance}</td>
-              <td style="font-size:11px; color:#666;">${m.payNote || ''}</td>
-            </tr>`;
-            
-          // 如果是最後一筆且是團報，補上最後的小計
-          if (index === sorted.length - 1 && currentWindow !== "") {
-            html += renderGroupSummary(currentWindow, gDue, gPaid, gSub, groupIndex);
-          }
-        });
-
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-      } else {
-        // --- 資料編修 (卡片模式) ---
-        container.classList.remove('finance-mode');
-        container.innerHTML = sorted.map(m => `
-          <div class="item-card" onclick="openAction(${m.row})">
-            <div>
-              <div style="display:flex; justify-content:space-between;">
-                <strong>${m.name}</strong>
-                <span style="font-size:11px; color:#999;">#${m.row}</span>
-              </div>
-              <div class="window-label" style="background:#eee; color:#333; border:1px solid #ccc;">
-                窗口：${m.contactName || '個人'}
-              </div>
-              <div style="font-size:13px; margin-top:10px;">
-                <div style="font-weight:bold;">⛪ ${m.church || '未填教會'}</div>
-                <div style="color:#666; margin-top:4px;">📱 ${m.phone || '-'}</div>
-              </div>
-            </div>
-            <div style="margin-top:12px; border-top:1px solid #eee; padding-top:8px; text-align:right;">
-               <span style="font-size:12px; color:#888;">餘額：</span>
-               <span class="${(m.totalDue-m.paid-m.subsidy) > 0 ? 'balance-red' : 'balance-green'}" style="font-weight:bold;">
-                 $${m.totalDue-m.paid-m.subsidy}
-               </span>
-            </div>
-          </div>
-        `).join('');
-      }
-    }
-    // --- 批次功能 ---
-    function updateBatchUI() {
-  const checkboxes = document.querySelectorAll('.row-checkbox:checked');
-  const batchBtn = document.getElementById('btn-batch-actions'); // 假設你的批次按鈕 ID
-  const countDisplay = document.getElementById('batch-count'); // 顯示選取幾筆
-  
-  if (checkboxes.length > 0) {
-    // 只要有選，就顯示按鈕
-    batchBtn.classList.remove('hidden');
-    if (countDisplay) countDisplay.innerText = checkboxes.length;
+  if (currentTab === 'finance') {
+    container.classList.add('finance-mode');
     
-    // Neubrutalism 特效：讓按鈕跳出來
-    batchBtn.style.transform = 'translate(-4px, -4px)';
-    batchBtn.style.boxShadow = '8px 8px 0px var(--shine-black)';
+    // 建立表格骨架
+    let html = `
+      <div class="search-container">
+        <input type="text" id="list-search" placeholder="🔍 快速搜尋姓名、教會或窗口..." oninput="filterAndRender()">
+        <div id="batch-status-bar" class="hidden">
+          已選取 <span id="batch-count" style="color:var(--shine-red)">0</span> 筆資料
+        </div>
+      </div>
+      <table class="finance-table">
+        <thead>
+          <tr>
+            <th style="width:40px;"><input type="checkbox" id="main-select-all" onchange="selectAll(this)"></th>
+            <th>姓名</th><th>教會</th><th>狀態</th>
+            <th style="text-align:right;">應收</th><th style="text-align:right;">補助</th>
+            <th style="text-align:right;">已繳</th><th style="text-align:right;">待繳</th>
+            <th>備註</th>
+          </tr>
+        </thead>
+        <tbody id="finance-body"></tbody>
+      </table>`;
+    
+    container.innerHTML = html;
+    const tbody = document.getElementById('finance-body');
+    
+    let lastWindow = null;
+    let gDue = 0, gPaid = 0, gSub = 0;
+    let groupIndex = 0;
+    let rowsHtml = "";
+
+    sorted.forEach((m, index) => {
+      const currentWindow = (m.contactName || "").trim();
+      const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
+      const isComplete = (balance <= 0);
+
+      // 窗口切換時插入小計
+      if (lastWindow !== null && currentWindow !== lastWindow && lastWindow !== "") {
+        rowsHtml += renderGroupSummaryHtml(lastWindow, gDue, gPaid, gSub, groupIndex);
+        gDue = 0; gPaid = 0; gSub = 0;
+        groupIndex++;
+      }
+
+      // 插入窗口標頭
+      if (currentWindow !== lastWindow) {
+        const isIndiv = currentWindow === "";
+        rowsHtml += `
+          <tr class="group-header" ${isIndiv ? '' : `onclick="toggleGroup(${groupIndex}, this)"`}>
+            <td colspan="9">
+              ${isIndiv ? '📍' : '<span class="toggle-icon">▼</span>'}
+              <strong>${isIndiv ? "個人報名區域" : "窗口：" + currentWindow}</strong>
+              ${(!isIndiv && m.contactPhone) ? `<span class="header-phone">📱 ${m.contactPhone}</span>` : ''}
+            </td>
+          </tr>`;
+        lastWindow = currentWindow;
+      }
+
+      if (currentWindow !== "") {
+        gDue += Number(m.totalDue || 0); gPaid += Number(m.paid || 0); gSub += Number(m.subsidy || 0);
+      }
+
+      // 成員資料列
+      const rowClass = currentWindow === "" ? "" : `group-row-${groupIndex}`;
+      rowsHtml += `
+        <tr onclick="openAction(${m.row})" class="${rowClass}">
+          <td onclick="event.stopPropagation()">
+            <input type="checkbox" class="row-checkbox" value="${m.row}" onchange="updateBatchUI()">
+          </td>
+          <td><strong>${m.name}</strong></td>
+          <td>${m.church || ''}</td>
+          <td><span class="badge ${isComplete ? 'bg-green' : 'bg-red'}">${isComplete ? '完成' : '待繳'}</span></td>
+          <td style="text-align:right;">${m.totalDue}</td>
+          <td style="text-align:right;">${m.subsidy}</td>
+          <td style="text-align:right; color:blue;">${m.paid}</td>
+          <td style="text-align:right;" class="${balance > 0 ? 'balance-red' : 'balance-green'}">${balance}</td>
+          <td class="note-cell">${m.payNote || ''}</td>
+        </tr>`;
+
+      if (index === sorted.length - 1 && currentWindow !== "") {
+        rowsHtml += renderGroupSummaryHtml(currentWindow, gDue, gPaid, gSub, groupIndex);
+      }
+    });
+
+    tbody.innerHTML = rowsHtml;
   } else {
-    // 沒選就隱藏
-    batchBtn.classList.add('hidden');
+    // 卡片模式 (編修模式)
+    container.classList.remove('finance-mode');
+    container.innerHTML = sorted.map(m => `
+      <div class="item-card" onclick="openAction(${m.row})">
+        <div class="card-top">
+          <strong>${m.name}</strong>
+          <span class="row-id">#${m.row}</span>
+        </div>
+        <div class="window-label">窗口：${m.contactName || '個人'}</div>
+        <div class="card-info">
+          <div>⛪ ${m.church || '未填教會'}</div>
+        </div>
+        <div class="card-footer">
+          餘額：<span class="${(m.totalDue-m.paid-m.subsidy)>0?'balance-red':'balance-green'}">$${m.totalDue-m.paid-m.subsidy}</span>
+        </div>
+      </div>
+    `).join('');
   }
 }
 
-    function selectAll(mainDot) {
-  const isChecked = mainDot.checked;
-  // 這裡要注意：只勾選「目前看得到」且「非隱藏」的 Checkbox (考量到搜尋過濾與收合)
-  const checkboxes = document.querySelectorAll('.row-checkbox');
+// 輔助：渲染小計 HTML
+function renderGroupSummaryHtml(name, due, paid, sub, idx) {
+  const bal = due - paid - sub;
+  return `
+    <tr class="table-summary-row group-row-${idx}">
+      <td colspan="3" style="text-align:right; font-weight:900;">📊 [${name}] 窗口小計：</td>
+      <td>-</td>
+      <td style="text-align:right;">$${due}</td>
+      <td style="text-align:right;">$${sub}</td>
+      <td style="text-align:right; color:blue;">$${paid}</td>
+      <td style="text-align:right;" class="${bal > 0 ? 'balance-red' : 'balance-green'}">$${bal}</td>
+      <td>-</td>
+    </tr>`;
+}
+    // --- 批次功能 ---
+    // 修正：複選 UI 觸發
+function updateBatchUI() {
+  const checked = document.querySelectorAll('.row-checkbox:checked');
+  const statusBar = document.getElementById('batch-status-bar');
+  const batchBtn = document.querySelector('.btn-batch'); // 這是你原本就有的黃色按鈕
   
-  checkboxes.forEach(cb => {
-    // 如果該列目前是隱藏的 (例如被收合或過濾掉)，可以決定要不要選
-    // 通常建議只選取「視覺上看得見」的
-    const isVisible = cb.closest('tr').offsetParent !== null;
-    if (isVisible) {
-      cb.checked = isChecked;
+  if (checked.length > 0) {
+    if (statusBar) statusBar.classList.remove('hidden');
+    if (batchBtn) {
+      batchBtn.style.display = 'inline-flex';
+      batchBtn.innerHTML = `🚀 批次編修 (${checked.length} 筆)`;
     }
-  });
-  
+    document.getElementById('batch-count').innerText = checked.length;
+  } else {
+    if (statusBar) statusBar.classList.add('hidden');
+    if (batchBtn) batchBtn.style.display = 'none';
+  }
+}
+
+    // 修正：全選邏輯 (只選目前看得到的)
+function selectAll(mainBox) {
+  const visibleCheckboxes = document.querySelectorAll('tr:not(.hidden) .row-checkbox');
+  visibleCheckboxes.forEach(cb => cb.checked = mainBox.checked);
   updateBatchUI();
 }
 
@@ -606,19 +618,14 @@
 
     // 專用的收合切換函式
     function toggleGroup(idx, headerEl) {
-      // 只選取帶有該 index 的列
-      const rows = document.querySelectorAll(`.group-row-${idx}`);
-      const icon = headerEl.querySelector('.toggle-icon');
-      
-      rows.forEach(row => {
-        row.classList.toggle('hidden'); // 或者使用之前定義的 .collapsed-row
-      });
-      
-      // 旋轉圖標
-      if (icon) {
-        icon.style.transform = icon.style.transform === 'rotate(-90deg)' ? 'rotate(0deg)' : 'rotate(-90deg)';
-      }
-    }
+  const rows = document.querySelectorAll(`.group-row-${idx}`);
+  const icon = headerEl.querySelector('.toggle-icon');
+  rows.forEach(row => row.classList.toggle('hidden'));
+  if (icon) {
+    const isCollapsed = rows[0].classList.contains('hidden');
+    icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+  }
+}
 
     function renderGroupSummary(name, due, paid, sub, idx) {
       const bal = due - paid - sub;
