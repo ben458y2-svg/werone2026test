@@ -867,7 +867,7 @@
   
         const start = (currentPage - 1) * pageSize;
         const end = start + pageSize;
-        const pagedData = data.slice(start, end); // 只取該頁的 20 筆
+        const pagedData = sorted.slice(start, end); // 只取該頁的 20 筆
         // --- 分頁邏輯結束 ---
         const cardsHtml = pagedData.map(m => {
           // 1. 邏輯計算與狀態判定
