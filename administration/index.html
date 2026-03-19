@@ -1045,6 +1045,16 @@ function changePage(step) {
       const m = fullData.find(item => item.row === rowId);
       if (!m) return;
 
+      // 1. 存下原始資料複本
+      originalData = JSON.parse(JSON.stringify(m));
+
+      // 2. 清空備註框，讓人員輸入「這一次」的原因
+      const noteEl = document.getElementById('m-adminNote');
+      if (noteEl) {
+      noteEl.value = ""; 
+      noteEl.style.border = "2px solid var(--shine-black)";
+      }
+      
       document.getElementById('edit-row-index').value = m.row;
       document.getElementById('batch-summary-info').classList.add('hidden');
 
@@ -1080,14 +1090,19 @@ function changePage(step) {
         }
       });
 
-      const allSections = document.querySelectorAll('#modal-fields-container .form-section');
-      const financeSec = document.getElementById('finance-module');
-      if (currentTab === 'finance') {
-        allSections.forEach(s => s.classList.add('hidden'));
-        financeSec.classList.remove('hidden');
-      } else {
-        allSections.forEach(s => s.classList.remove('hidden'));
-      }
+      // 在 openAction 函式的最後面
+const financeSec = document.getElementById('finance-module');
+const allSections = document.querySelectorAll('#modal-fields-container .form-section');
+
+if (currentTab === 'edit') {
+  // 如果是在資料編修分頁，隱藏財務模組，顯示其他所有區塊
+  if (financeSec) financeSec.classList.add('hidden');
+  allSections.forEach(s => s.classList.remove('hidden'));
+} else {
+  // 如果是在財務分頁，顯示財務模組，隱藏其他（如個人資料等）
+  if (financeSec) financeSec.classList.remove('hidden');
+  allSections.forEach(s => s.classList.add('hidden'));
+}
 
       document.querySelector('#editModal h2').innerText = `修改成員資料：${m.name}`;
       document.getElementById('editModal').classList.remove('hidden');
