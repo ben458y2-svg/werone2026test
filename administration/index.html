@@ -858,17 +858,28 @@
           return;
         }
         container.innerHTML = sorted.map(m => {
+          // 1. 邏輯計算與狀態判定
           const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
+          const isComplete = (balance <= 0);
+          const statusClass = isComplete ? 'bg-green' : 'bg-red';
+          const statusText = isComplete ? '已繳清' : `待繳 $${balance}`;
+
           return `
-            <div class="item-card" onclick="openAction(${m.row})">
-              <div class="card-header">
-                <strong style="font-size:1.1em;">${m.name}</strong>
-                <span style="font-size:11px; background:var(--shine-black); color:var(--shine-lime); padding:2px 6px; font-weight:900;">#${m.row}</span>
+            <div class="item-card" onclick="openAction(${m.row})" style="display: flex; flex-direction: column; min-height: 160px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <strong style="font-size: 1.15em;">${m.name}</strong>
+                <span class="badge ${statusClass}" style="font-size: 11px; padding: 2px 8px;">${statusText}</span>
               </div>
-              <div class="window-label">窗口：${m.contactName || '個人'}</div>
-              <div style="margin-top:8px; font-size:14px; color:#555;">⛪ ${m.church || '未填教會'}</div>
-              <div style="margin-top:10px; border-top:1px dashed var(--shine-gray); padding-top:8px; font-weight:900; font-size:13px;">
-                餘額：<span class="${balance > 0 ? 'balance-red' : 'balance-green'}">$${balance}</span>
+
+              <div style="flex-grow: 1; border-top: 1px solid #eee; padding-top: 10px; font-size: 14px; color: #555;">
+                <div style="font-weight: 900; color: var(--shine-black); margin-bottom: 4px;">⛪ ${m.church || '未填教會'}</div>
+                <div style="color: #666; font-size: 13px;">📱 ${m.phone || '無電話紀錄'}</div>
+              </div>
+
+              <div style="margin-top: 12px; border-top: 1px dashed var(--shine-gray); padding-top: 8px;">
+                <div class="window-label" style="display: block; width: 100%; text-align: center; background: #f9f9f9; color: #777;">
+                  👤 窗口：${m.contactName || '個人'}
+                </div>
               </div>
             </div>
           `;
