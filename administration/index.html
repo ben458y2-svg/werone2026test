@@ -358,120 +358,149 @@
 
     // --- 5. 排序邏輯：個人報名最前，團體按窗口聚集 ---
     function sortData(data) {
-      return data.sort((a, b) => {
-        // a 為個人報名 (group 為空)，b 為團體 -> a 前移
-        if (!a.group && b.group) return -1;
-        if (a.group && !b.group) return 1;
-        // 皆為團體時，按 group 名稱排序 (窗口聚集)
-        if (a.group !== b.group) return (a.group || "").localeCompare(b.group || "");
-        // 同一窗口內按姓名排
+      return [...data].sort((a, b) => {
+        // 使用 W 欄 (contactName) 作為分群依據
+        const winA = (a.contactName || "").trim();
+        const winB = (b.contactName || "").trim();
+        
+        // 1. 個人報名 (窗口姓名為空) 置頂排序
+        if (!winA && winB) return -1;
+        if (!winB && winA) return 1;
+        
+        // 2. 團報名單按「窗口姓名」進行字母/中文排序
+        if (winA !== winB) return winA.localeCompare(winB);
+        
+        // 3. 同一窗口內，按「教會 (church)」排序 (滿足你對教會排序的期待)
+        const churchA = (a.church || "").trim();
+        const churchB = (b.church || "").trim();
+        if (churchA !== churchB) return churchA.localeCompare(churchB);
+
+        // 4. 最後才是姓名排序
         return a.name.localeCompare(b.name);
       });
     }
     
-    // --- 渲染清單 (分組邏輯) ---
     // --- 渲染清單 (包含模式判斷與 1, 2, 3, 4, 5 項修正) ---
     function renderList(data) {
       const container = document.getElementById('section-list');
-      const sorted = sortData(data); // 執行第 5 項排序修正
+      const sorted = sortData(data);
 
       if (currentTab === 'finance') {
-        container.classList.add('finance-mode'); // 解決 CSS 佈局問題
+        container.classList.add('finance-mode');
         
         let html = `
           <table class="finance-table">
             <thead>
               <tr>
                 <th style="width:40px;"><input type="checkbox" onchange="selectAll(this)"></th>
-                <th>姓名 / 教會</th>
-                <th>狀態 / 備註</th>
-                <th>應收 / 補助 / 已繳</th>
-                <th>待繳餘額</th>
+                <th>姓名</th>
+                <th>教會</th>
+                <th>繳費狀態</th>
+                <th style="text-align:right;">應收</th>
+                <th style="text-align:right;">補助</th>
+                <th style="text-align:right;">已繳</th>
+                <th style="text-align:right;">待繳</th>
+                <th>繳費備註</th>
               </tr>
             </thead>
             <tbody>`;
         
-        let lastGroup = null;
-        let groupTotalDue = 0, groupTotalPaid = 0, groupTotalSubsidy = 0;
-        let groupRows = [];
+        let lastWindow = null;
+        let gDue = 0, gPaid = 0, gSub = 0;
 
-        // 輔助函式：渲染團體總計列
-        const renderSummary = (due, paid, sub) => `
-          <tr class="table-summary-row">
-            <td colspan="3" style="text-align:right;">📦 本次對帳總計：</td>
-            <td>$${due} / $${sub} / <span style="color:blue;">$${paid}</span></td>
-            <td class="${(due-paid-sub) > 0 ? 'balance-red' : 'balance-green'}">$${due - paid - sub}</td>
-          </tr>`;
+        // 小計列渲染函式 (對應扁平化欄位)
+        const renderGroupSummary = (name, due, paid, sub) => {
+          const bal = due - paid - sub;
+          return `
+            <tr class="table-summary-row">
+              <td colspan="3" style="text-align:right; color:#555;">📊 [${name}] 窗口對帳總計：</td>
+              <td>-</td>
+              <td style="text-align:right;">$${due}</td>
+              <td style="text-align:right;">$${sub}</td>
+              <td style="text-align:right; color:blue;">$${paid}</td>
+              <td style="text-align:right;" class="${bal > 0 ? 'balance-red' : 'balance-green'}">$${bal}</td>
+              <td>-</td>
+            </tr>`;
+        };
 
         sorted.forEach((m, index) => {
-          const currentGroup = m.group || "個人報名";
-          const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
+          const currentWindow = (m.contactName || "").trim();
+          const displayGroupName = currentWindow || "個人報名";
+          
+          // 邏輯判定：應收 - 已繳 - 補助 = 0 則完成
+          const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
+          const isComplete = (balance <= 0); 
+          const statusText = isComplete ? "完成報名" : "待繳費";
+          const statusClass = isComplete ? "bg-green" : "bg-red";
 
-          // 偵測到新組別，且不是第一筆，渲染上一組的總計
-          if (lastGroup !== null && currentGroup !== lastGroup && lastGroup !== "個人報名") {
-            html += renderSummary(groupTotalDue, groupTotalPaid, groupTotalSubsidy);
-            groupTotalDue = 0; groupTotalPaid = 0; groupTotalSubsidy = 0;
+          // 偵測窗口切換，插入小計 (個人報名不顯示小計)
+          if (lastWindow !== null && currentWindow !== lastWindow && lastWindow !== "") {
+            html += renderGroupSummary(lastWindow, gDue, gPaid, gSub);
+            gDue = 0; gPaid = 0; gSub = 0;
           }
 
-          // 渲染組別標頭
-          if (currentGroup !== lastGroup) {
-            const isIndividual = currentGroup === "個人報名";
+          // 插入分群標頭 (窗口名稱)
+          if (currentWindow !== lastWindow) {
             html += `
               <tr class="group-header">
-                <td colspan="5" style="padding:10px; background:#e3f2fd;">
-                  ${isIndividual ? '📍 個人報名' : '📦 團體：' + currentGroup}
-                  ${!isIndividual ? `<span style="margin-left:15px; font-size:12px; font-weight:normal; color:#444;">👤 窗口：${m.contactName || '未填'} | 📱 ${m.contactPhone || '-'}</span>` : ''}
+                <td colspan="9">
+                  ${currentWindow === "" ? "📍 個人報名區域" : "📦 窗口：" + currentWindow}
                 </td>
               </tr>`;
-            lastGroup = currentGroup;
+            lastWindow = currentWindow;
           }
 
-          // 累加團體統計
-          if (currentGroup !== "個人報名") {
-            groupTotalDue += Number(m.totalDue || 0);
-            groupTotalPaid += Number(m.paid || 0);
-            groupTotalSubsidy += Number(m.subsidy || 0);
+          // 累加團報小計
+          if (currentWindow !== "") {
+            gDue += Number(m.totalDue || 0);
+            gPaid += Number(m.paid || 0);
+            gSub += Number(m.subsidy || 0);
           }
 
+          // 表格主體內容 (單行扁平化)
           html += `
             <tr onclick="openAction(${m.row})">
               <td onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="${m.row}" onchange="updateBatchUI()"></td>
-              <td><strong>${m.name}</strong><br><small>${m.church || ''}</small></td>
-              <td>
-                <span class="badge ${balance <= 0 ? 'bg-green' : (m.paid > 0 ? 'bg-yellow' : 'bg-red')}">${m.status}</span>
-                <div style="font-size:11px; color:#666; margin-top:4px;">📝 ${m.payNote || '無備註'}</div>
-              </td>
-              <td>${m.totalDue} / ${m.subsidy} / <span style="color:blue;">${m.paid}</span></td>
-              <td class="${balance > 0 ? 'balance-red' : 'balance-green'}">$${balance}</td>
+              <td><strong>${m.name}</strong></td>
+              <td>${m.church || ''}</td>
+              <td><span class="badge ${statusClass}">${statusText}</span></td>
+              <td style="text-align:right;">${m.totalDue || 0}</td>
+              <td style="text-align:right;">${m.subsidy || 0}</td>
+              <td style="text-align:right; color:blue; font-weight:bold;">${m.paid || 0}</td>
+              <td style="text-align:right;" class="${balance > 0 ? 'balance-red' : 'balance-green'}">${balance}</td>
+              <td style="font-size:12px; color:#666; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m.payNote || ''}</td>
             </tr>`;
             
-          // 最後一筆處理
-          if (index === sorted.length - 1 && currentGroup !== "個人報名") {
-            html += renderSummary(groupTotalDue, groupTotalPaid, groupTotalSubsidy);
+          // 如果是最後一筆且是團報，補上最後一個小計
+          if (index === sorted.length - 1 && currentWindow !== "") {
+            html += renderGroupSummary(currentWindow, gDue, gPaid, gSub);
           }
         });
 
         html += `</tbody></table>`;
         container.innerHTML = html;
       } else {
-        // --- 資料編修模式 (第 2 項修正：移除標籤，改顯示窗口) ---
+        // --- 資料編修 (卡片模式) ---
         container.classList.remove('finance-mode');
         container.innerHTML = sorted.map(m => `
           <div class="item-card" onclick="openAction(${m.row})">
             <div>
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <strong style="font-size:1.1em;">${m.name}</strong>
-                <span style="font-size:12px; color:#666;">#${m.row}</span>
+              <div style="display:flex; justify-content:space-between;">
+                <strong>${m.name}</strong>
+                <span style="font-size:11px; color:#999;">#${m.row}</span>
               </div>
-              <div style="font-size:13px; margin-top:8px;">
-                <div>⛪ ${m.church || '未填教會'}</div>
-                <div style="color:#666;">📱 ${m.phone}</div>
-                <div class="window-label">👤 窗口：${m.contactName || (m.group ? m.group : '個人')}</div>
+              <div class="window-label" style="background:#eee; color:#333; border:1px solid #ccc;">
+                窗口：${m.contactName || '個人'}
+              </div>
+              <div style="font-size:13px; margin-top:10px;">
+                <div style="font-weight:bold;">⛪ ${m.church || '未填教會'}</div>
+                <div style="color:#666; margin-top:4px;">📱 ${m.phone || '-'}</div>
               </div>
             </div>
-            <div style="border-top: 1px solid #eee; margin-top:10px; padding-top:8px; font-size:12px; text-align:right;">
-               <span class="${(m.totalDue - m.paid - m.subsidy) > 0 ? 'balance-red' : 'balance-green'}">
-                 餘額：$${m.totalDue - m.paid - m.subsidy}
+            <div style="margin-top:12px; border-top:1px solid #eee; padding-top:8px; text-align:right;">
+               <span style="font-size:12px; color:#888;">餘額：</span>
+               <span class="${(m.totalDue-m.paid-m.subsidy) > 0 ? 'balance-red' : 'balance-green'}" style="font-weight:bold;">
+                 $${m.totalDue-m.paid-m.subsidy}
                </span>
             </div>
           </div>
