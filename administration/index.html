@@ -526,7 +526,7 @@
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px;">
         <div>
           <label for="search-input">關鍵字搜尋</label>
-          <input type="text" id="search-input" placeholder="搜尋姓名、電話、教會..." oninput="handleSearch()">
+          <input type="text" id="search-input" placeholder="搜尋姓名、電話、教會、團報窗口姓名..." oninput="handleSearch()">
         </div>
         <div>
           <label>目前筆數</label>
@@ -721,19 +721,31 @@
 
     // --- 搜尋 ---
     function handleSearch() {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => {
-        const key = (document.getElementById('search-input').value || '').toLowerCase();
-        let filtered = fullData.filter(m =>
-          (m.name && m.name.toLowerCase().includes(key)) ||
-          (m.phone && m.phone.includes(key)) ||
-          (m.church && m.church.toLowerCase().includes(key)) ||
-          (m.group && m.group.toLowerCase().includes(key))
-        );
-        document.getElementById('stats-count').innerText = `${filtered.length} 筆`;
-        renderList(filtered);
-      }, 200);
-    }
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    // 1. 取得搜尋關鍵字
+    const key = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+    
+    // 2. 關鍵：搜尋時務必重置頁碼回到第一頁
+    currentPage = 1;
+
+    // 3. 執行多欄位過濾
+    let filtered = fullData.filter(m => {
+      if (!key) return true; // 若無關鍵字則顯示全部
+      
+      return (m.name && m.name.toLowerCase().includes(key)) ||
+             (m.phone && m.phone.includes(key)) || // 手機號碼
+             (m.church && m.church.toLowerCase().includes(key)) ||
+             (m.contactName && m.contactName.toLowerCase().includes(key)); // 窗口姓名
+    });
+
+    // 4. 更新統計數字並重新渲染
+    const statsEl = document.getElementById('stats-count');
+    if (statsEl) statsEl.innerText = `${filtered.length} 筆`;
+    
+    renderList(filtered);
+  }, 250); // 稍微增加延遲，對 1000 筆資料更友善
+}
 
     // --- 排序 ---
     function sortData(data) {
