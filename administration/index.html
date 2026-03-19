@@ -116,8 +116,14 @@
     .group-header i { margin-right: 10px; transition: transform 0.2s; display: inline-block; }
     .group-header.collapsed i { transform: rotate(-90deg); }
     .collapsed-row { display: none !important; }
+    
     .table-summary-row { background-color: #f8f9fa !important; font-weight: bold; border-top: 2px solid #333; border-bottom: 2px solid #333; }
-
+.toggle-icon {
+      display: inline-block;
+      transition: transform 0.2s ease;
+      margin-right: 8px;
+      font-style: normal;
+    }
     .balance-red { color: var(--shine-red); font-weight: 900; }
     .balance-green { color: #2e7d32; font-weight: 900; }
 
@@ -411,13 +417,13 @@
         
         let html = `
           <div class="search-container">
-            <input type="text" id="list-search" placeholder="🔍 輸入姓名、教會或窗口進行快速過濾..." oninput="filterAndRender(globalData)">
+            <input type="text" id="list-search" placeholder="🔍 輸入姓名、教會或窗口搜尋..." oninput="filterAndRender(globalData)">
           </div>
           <table class="finance-table">
             <thead>
               <tr>
                 <th style="width:40px;"><input type="checkbox" onchange="selectAll(this)"></th>
-                <th>姓名</th><th>教會</th><th>繳費狀態</th>
+                <th>姓名</th><th>教會</th><th>狀態</th>
                 <th style="text-align:right;">應收</th><th style="text-align:right;">補助</th>
                 <th style="text-align:right;">已繳</th><th style="text-align:right;">待繳</th>
                 <th>備註</th>
@@ -427,43 +433,49 @@
         
         let lastWindow = null;
         let gDue = 0, gPaid = 0, gSub = 0;
-        let groupIndex = 0; // 用於收合識別
+        let groupIndex = 0; // 用於識別唯一的群組
 
         sorted.forEach((m, index) => {
           const currentWindow = (m.contactName || "").trim();
           const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
           const isComplete = (balance <= 0);
 
-          // 窗口切換：插入前一組的小計列
+          // 【修正點 1】偵測窗口切換，先插入「前一個」窗口的小計列
           if (lastWindow !== null && currentWindow !== lastWindow && lastWindow !== "") {
             html += renderGroupSummary(lastWindow, gDue, gPaid, gSub, groupIndex);
             gDue = 0; gPaid = 0; gSub = 0;
-            groupIndex++;
+            groupIndex++; // 完成一個群組後，Index 往下加 1
           }
 
-          // 插入分群標頭 (新增電話顯示與收合點擊)
+          // 【修正點 2】插入分群標頭
           if (currentWindow !== lastWindow) {
             const isIndiv = currentWindow === "";
+            // 如果是個人報名，我們不給它收合 index (或者給一個特殊值)
+            const clickAction = isIndiv ? "" : `onclick="toggleGroup(${groupIndex}, this)"`;
+            
             html += `
-              <tr class="group-header" onclick="toggleGroup(${groupIndex})">
+              <tr class="group-header" ${clickAction}>
                 <td colspan="9">
-                  <i>▼</i>
+                  ${isIndiv ? '' : '<span class="toggle-icon">▼</span>'}
                   <strong>${isIndiv ? "📍 個人報名區域" : "📦 窗口：" + currentWindow}</strong>
-                  ${(!isIndiv && m.contactPhone) ? `<span style="margin-left:15px; font-size:12px; font-weight:normal; color:#555;">📱 聯絡窗口電話：${m.contactPhone}</span>` : ''}
+                  ${(!isIndiv && m.contactPhone) ? `<span style="margin-left:15px; font-size:12px; font-weight:normal; color:#555;">📱 ${m.contactPhone}</span>` : ''}
                 </td>
               </tr>`;
             lastWindow = currentWindow;
           }
 
+          // 累加數值
           if (currentWindow !== "") {
             gDue += Number(m.totalDue || 0);
             gPaid += Number(m.paid || 0);
             gSub += Number(m.subsidy || 0);
           }
 
-          // 核心資料列 (增加 group-index 類別供收合)
+          // 【修正點 3】給予成員列特定的群組類別 (個人報名不加收合類別)
+          const rowClass = currentWindow === "" ? "" : `group-row-${groupIndex}`;
+          
           html += `
-            <tr onclick="openAction(${m.row})" class="group-row-${groupIndex}">
+            <tr onclick="openAction(${m.row})" class="${rowClass}">
               <td onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="${m.row}"></td>
               <td><strong>${m.name}</strong></td>
               <td>${m.church || ''}</td>
@@ -472,9 +484,10 @@
               <td style="text-align:right;">${m.subsidy}</td>
               <td style="text-align:right; color:blue;">${m.paid}</td>
               <td style="text-align:right;" class="${balance > 0 ? 'balance-red' : 'balance-green'}">${balance}</td>
-              <td style="font-size:11px;">${m.payNote || ''}</td>
+              <td style="font-size:11px; color:#666;">${m.payNote || ''}</td>
             </tr>`;
             
+          // 如果是最後一筆且是團報，補上最後的小計
           if (index === sorted.length - 1 && currentWindow !== "") {
             html += renderGroupSummary(currentWindow, gDue, gPaid, gSub, groupIndex);
           }
@@ -567,23 +580,35 @@
     }
 
 
-    // 3. 收合切換函式
-    function toggleGroup(index) {
-      const rows = document.querySelectorAll(`.group-row-${index}`);
-      const header = rows[0].previousElementSibling; // 取得標頭列
-      rows.forEach(row => row.classList.toggle('collapsed-row'));
-      header.classList.toggle('collapsed');
+    // 專用的收合切換函式
+    function toggleGroup(idx, headerEl) {
+      // 只選取帶有該 index 的列
+      const rows = document.querySelectorAll(`.group-row-${idx}`);
+      const icon = headerEl.querySelector('.toggle-icon');
+      
+      rows.forEach(row => {
+        row.classList.toggle('hidden'); // 或者使用之前定義的 .collapsed-row
+      });
+      
+      // 旋轉圖標
+      if (icon) {
+        icon.style.transform = icon.style.transform === 'rotate(-90deg)' ? 'rotate(0deg)' : 'rotate(-90deg)';
+      }
     }
 
-    function renderGroupSummary(name, due, paid, sub, index) {
+    function renderGroupSummary(name, due, paid, sub, idx) {
       const bal = due - paid - sub;
-      return `<tr class="table-summary-row group-row-${index}">
-                <td colspan="3" style="text-align:right;">📊 [${name}] 總計：</td>
-                <td>-</td><td style="text-align:right;">$${due}</td>
-                <td style="text-align:right;">$${sub}</td><td style="text-align:right;">$${paid}</td>
-                <td style="text-align:right;" class="${bal > 0 ? 'balance-red' : 'balance-green'}">$${bal}</td>
-                <td>-</td>
-              </tr>`;
+      // 小計列也必須帶有相同的 group-row-${idx} 類別，才會一起被收合
+      return `
+        <tr class="table-summary-row group-row-${idx}">
+          <td colspan="3" style="text-align:right; font-weight:900;">📊 [${name}] 窗口小計：</td>
+          <td>-</td>
+          <td style="text-align:right;">$${due}</td>
+          <td style="text-align:right;">$${sub}</td>
+          <td style="text-align:right; color:blue;">$${paid}</td>
+          <td style="text-align:right;" class="${bal > 0 ? 'balance-red' : 'balance-green'}">$${bal}</td>
+          <td>-</td>
+        </tr>`;
     }
     // --- 單人編輯開啟 ---
     function openAction(rowId) {
