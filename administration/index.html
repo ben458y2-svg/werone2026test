@@ -525,16 +525,40 @@
     }
     // --- 批次功能 ---
     function updateBatchUI() {
-      const selected = document.querySelectorAll('.row-checkbox:checked');
-      const btn = document.getElementById('btn-batch-edit');
-      btn.style.display = (currentTab === 'finance' && selected.length > 0) ? 'inline-flex' : 'none';
-      document.getElementById('selected-count').innerText = selected.length;
-    }
+  const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+  const batchBtn = document.getElementById('btn-batch-actions'); // 假設你的批次按鈕 ID
+  const countDisplay = document.getElementById('batch-count'); // 顯示選取幾筆
+  
+  if (checkboxes.length > 0) {
+    // 只要有選，就顯示按鈕
+    batchBtn.classList.remove('hidden');
+    if (countDisplay) countDisplay.innerText = checkboxes.length;
+    
+    // Neubrutalism 特效：讓按鈕跳出來
+    batchBtn.style.transform = 'translate(-4px, -4px)';
+    batchBtn.style.boxShadow = '8px 8px 0px var(--shine-black)';
+  } else {
+    // 沒選就隱藏
+    batchBtn.classList.add('hidden');
+  }
+}
 
-    function selectAll(master) {
-      document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = master.checked);
-      updateBatchUI();
+    function selectAll(mainDot) {
+  const isChecked = mainDot.checked;
+  // 這裡要注意：只勾選「目前看得到」且「非隱藏」的 Checkbox (考量到搜尋過濾與收合)
+  const checkboxes = document.querySelectorAll('.row-checkbox');
+  
+  checkboxes.forEach(cb => {
+    // 如果該列目前是隱藏的 (例如被收合或過濾掉)，可以決定要不要選
+    // 通常建議只選取「視覺上看得見」的
+    const isVisible = cb.closest('tr').offsetParent !== null;
+    if (isVisible) {
+      cb.checked = isChecked;
     }
+  });
+  
+  updateBatchUI();
+}
 
     function openBatchEdit() {
       batchSelectedRows = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => cb.value);
