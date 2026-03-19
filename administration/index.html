@@ -620,7 +620,7 @@
   </div>
 
   <div class="form-group">
-    <label style="color: var(--shine-red); font-weight: 900;">本次異動說明 *</label>
+    <label style="background: var(--shine-yellow)>本次異動說明</label>
     <textarea id="m-adminNote" style="height: 80px; border: 2px solid var(--shine-black);" placeholder="若有修改上方資料，請在此輸入原因..."></textarea>
   </div>
       </div>
@@ -1049,57 +1049,55 @@ function changePage(step) {
   const m = fullData.find(item => item.row === rowId);
   if (!m) return;
 
-  // 1. 存下原始資料複本
+  // 1. 存下原始資料複本 (供 submitEdit 比對差異)
   originalData = JSON.parse(JSON.stringify(m));
 
-  // --- 關鍵修正：處理歷史紀錄顯示與本次輸入框清空 ---
-  // 歷史紀錄填入下方唯讀區
+  // --- 2. 處理備註歷史紀錄與清空輸入框 ---
   const historyEl = document.getElementById('m-history-logs');
   if (historyEl) {
+    // 將舊紀錄填入歷史區
     historyEl.innerText = m.adminNote || "尚未有異動紀錄";
-    // 讓捲軸自動滾到最下方
+    // 捲軸自動置底
     setTimeout(() => { historyEl.scrollTop = historyEl.scrollHeight; }, 100);
   }
 
-  // 清空本次輸入框
   const noteEl = document.getElementById('m-adminNote');
   if (noteEl) {
-    noteEl.value = ""; 
+    noteEl.value = ""; // 永遠清空本次輸入框
     noteEl.style.border = "2px solid var(--shine-black)";
   }
   
   document.getElementById('edit-row-index').value = m.row;
   document.getElementById('batch-summary-info').classList.add('hidden');
 
+  // --- 3. 欄位自動填值 ---
   const fields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','status','paid','subsidy','payMethod','receiver','payNote'];
   
   fields.forEach(f => {
-    // 已經手動處理過 adminNote，迴圈內跳過
-    if (f === 'adminNote') return; 
+    if (f === 'adminNote') return; // 跳過備註，上面已手動處理
 
     const el = document.getElementById('m-' + f);
     if (!el) return;
 
     let val = m[f] || "";
 
-    // --- 處理日期欄位 ---
+    // 日期處理
     if (f === 'birthday' && val) {
       try {
         const d = new Date(val);
         if (!isNaN(d.getTime())) {
           el.value = d.toISOString().split('T')[0];
-          return; // 處理完畢
+          return;
         }
-      } catch (e) { console.error("日期解析失敗:", e); }
+      } catch (e) { console.error(e); }
     }
 
-    // --- 處理狀態欄位 ---
+    // 狀態處理
     if (f === 'status') {
       el.value = (val === '取消報名') ? '取消報名' : '';
       return;
     }
 
-    // --- 通用賦值：SELECT 與一般 INPUT ---
     if (el.tagName === 'SELECT') {
       el.value = val || (el.options[0] ? el.options[0].value : "");
     } else {
@@ -1107,23 +1105,32 @@ function changePage(step) {
     }
   });
 
-  // --- 財務模組顯示/隱藏邏輯 ---
+  // --- 4. 核心修正：介面渲染邏輯 (確保隱藏財務模組) ---
   const financeSec = document.getElementById('finance-module');
-  const allSections = document.querySelectorAll('#modal-fields-container .form-section');
+  // 這裡確保抓到的是編輯彈窗內的所有區塊
+  const allSections = document.querySelectorAll('#editModal .form-section');
 
+  // 根據目前的 Tab 狀態來決定誰該消失
   if (currentTab === 'edit') {
+    // 【資料編修頁】模式：隱藏財務區，顯示其他區
     if (financeSec) financeSec.classList.add('hidden');
-    allSections.forEach(s => s.classList.remove('hidden'));
-  } else {
+    allSections.forEach(sec => {
+      // 只要不是財務區，就顯示
+      if (sec.id !== 'finance-module') sec.classList.remove('hidden');
+    });
+  } else if (currentTab === 'finance') {
+    // 【財務模組頁】模式：顯示財務區，隱藏其他所有區
     if (financeSec) financeSec.classList.remove('hidden');
-    allSections.forEach(s => s.classList.add('hidden'));
+    allSections.forEach(sec => {
+      if (sec.id !== 'finance-module') sec.classList.add('hidden');
+    });
   }
 
+  // 設定標題與顯示 Modal
   document.querySelector('#editModal h2').innerText = `修改成員資料：${m.name}`;
   document.getElementById('editModal').classList.remove('hidden');
   isModalDirty = false;
 }
-
     function closeModal() {
       if (isModalDirty && !confirm("⚠️ 尚未儲存，確定關閉？")) return;
       document.getElementById('editModal').classList.add('hidden');
