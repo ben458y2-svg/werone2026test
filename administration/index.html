@@ -735,20 +735,6 @@
       }, 200);
     }
 
-    function filterAndRender() {
-      // 只有在非翻頁（即：重新輸入搜尋文字）時，才重置回第一頁
-    if (!isPaging) {
-    currentPage = 1;
-      }
-      const searchTerm = (document.getElementById('list-search')?.value || '').toLowerCase();
-      const filtered = fullData.filter(m =>
-        m.name.toLowerCase().includes(searchTerm) ||
-        (m.church && m.church.toLowerCase().includes(searchTerm)) ||
-        (m.contactName && m.contactName.toLowerCase().includes(searchTerm))
-      );
-      renderList(filtered);
-    }
-
     // --- 排序 ---
     function sortData(data) {
       return [...data].sort((a, b) => {
@@ -911,26 +897,40 @@
       }
     }
 
-    // 這裡加上 isPaging 參數，預設值為 false
+    /**
+ * 統一的過濾與渲染中控
+ * @param {boolean} isPaging - 是否為翻頁觸發（預設為 false，即重新搜尋）
+ */
 function filterAndRender(isPaging = false) {
-  
-  // 關鍵邏輯：只有在「不是翻頁」的情況下（即使用者輸入新關鍵字），才重置頁碼
+  // 1. 只有在「不是翻頁」的情況下（即：手動輸入關鍵字時），才重置回第一頁
   if (isPaging !== true) {
     currentPage = 1; 
   }
 
-  // --- 以下是你原本的過濾邏輯 ---
-  const searchTerm = document.getElementById('list-search')?.value.toLowerCase() || "";
+  // 2. 獲取搜尋關鍵字
+  const searchInput = document.getElementById('list-search');
+  const searchTerm = (searchInput?.value || "").toLowerCase();
   
-  // 使用 fullData 進行過濾
+  // 3. 從 fullData 進行過濾
   const filtered = fullData.filter(m => 
-    m.name.toLowerCase().includes(searchTerm) || 
-    (m.church && m.church.toLowerCase().includes(searchTerm)) ||
-    (m.contactName && m.contactName.toLowerCase().includes(searchTerm))
+    (m.name || "").toLowerCase().includes(searchTerm) || 
+    (m.church || "").toLowerCase().includes(searchTerm) || 
+    (m.contactName || "").toLowerCase().includes(searchTerm)
   );
 
-  // 最後把過濾後的結果丟給 renderList
+  // 4. 丟給 renderList 進行排序、裁切與顯示
   renderList(filtered);
+}
+
+ // 翻頁專用函式
+function changePage(step) {
+  currentPage += step;
+  
+  // 呼叫過濾函式，並傳入 true 告訴它不要重置頁碼
+  filterAndRender(true); 
+
+  // 自動捲回頂部提升體驗
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
     
     // --- 小計 HTML ---
