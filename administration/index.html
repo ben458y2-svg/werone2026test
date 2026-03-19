@@ -896,6 +896,14 @@
             </div>
           `;
         }).join('');
+        // 產生分頁控制按鈕
+      const paginationHtml = `
+    <div class="pagination-controls" style="grid-column: 1/-1; display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 30px; padding: 20px;">
+      <button class="btn" onclick="changePage(-1)" ${currentPage === 1 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>上一頁</button>
+      <span style="font-weight: 900;">第 ${currentPage} / ${totalPages} 頁 (共 ${data.length} 筆)</span>
+      <button class="btn" onclick="changePage(1)" ${currentPage === totalPages ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>下一頁</button>
+    </div>
+  `;
       }
     }
 
