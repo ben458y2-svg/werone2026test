@@ -661,6 +661,8 @@
     let isModalDirty = false;
     let batchSelectedRows = [];
     let currentDisplayData = [];
+    let currentPage = 1;
+    const pageSize = 20; // 每頁顯示 20 張
 
     // --- API 核心 ---
     async function api(payload) {
@@ -734,6 +736,7 @@
     }
 
     function filterAndRender() {
+      currentPage = 1; // 每次搜尋都回到第一頁
       const searchTerm = (document.getElementById('list-search')?.value || '').toLowerCase();
       const filtered = fullData.filter(m =>
         m.name.toLowerCase().includes(searchTerm) ||
@@ -857,6 +860,15 @@
           container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; border:2px dashed var(--shine-gray); color:var(--shine-gray); font-weight:900;">📭 無符合條件的資料</div>`;
           return;
         }
+        // --- 分頁邏輯開始 ---
+        const totalPages = Math.ceil(data.length / pageSize);
+        // 確保當前頁碼不會超出範圍（例如搜尋後資料變少時）
+        if (currentPage > totalPages) currentPage = 1;
+  
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pagedData = data.slice(start, end); // 只取該頁的 20 筆
+        // --- 分頁邏輯結束 ---
         container.innerHTML = sorted.map(m => {
           // 1. 邏輯計算與狀態判定
           const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
@@ -887,6 +899,19 @@
       }
     }
 
+    function changePage(step) {
+    currentPage += step;
+    // 重新呼叫渲染，這裏建議傳入你存放原始資料的全域變數 (例如 globalData 或 allMemberData)
+    // 如果你有搜尋過濾，請呼叫 filterAndRender()
+    if (typeof filterAndRender === "function") {
+    filterAndRender(); 
+    } else {
+    renderList(globalData);
+    }
+    // 切換頁面後自動捲回頂部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
     // --- 小計 HTML ---
     function renderGroupSummaryHtml(name, due, paid, sub, idx) {
       const bal = due - paid - sub;
