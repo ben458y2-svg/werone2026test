@@ -523,19 +523,24 @@
     </div>
 
     <!-- 搜尋區 -->
-    <div id="search-section" class="form-section">
-      <div class="section-title">快速檢索</div>
-      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px;">
-        <div>
-          <label for="search-input">關鍵字搜尋</label>
-          <input type="text" id="search-input" placeholder="搜尋姓名、電話、教會、團報窗口姓名..." oninput="handleSearch()">
-        </div>
-        <div>
-          <label>目前筆數</label>
-          <div id="stats-count" style="padding:12px; font-weight:900; border:2px solid var(--shine-black); background:white; margin-top:5px; text-align:center; box-shadow: 4px 4px 0px var(--shine-black);">0 筆</div>
-        </div>
-      </div>
-    </div>
+    <div id="search-section" class="control-panel">
+  
+  <div id="admin-search-group" class="search-group">
+    <input type="text" id="admin-search" placeholder="搜尋姓名、電話、教會..." oninput="handleAdminSearch()">
+    <span id="admin-stats-count" class="count-badge">0 筆</span>
+  </div>
+
+  <div id="finance-search-group" class="search-group hidden">
+    <input type="text" id="finance-search" placeholder="搜尋姓名或窗口..." oninput="handleFinanceSearch()">
+    
+    <select id="window-filter-select" onchange="handleFinanceSearch()">
+      <option value="all">所有窗口</option>
+      </select>
+    
+    <span id="finance-stats-count" class="count-badge">0 筆</span>
+  </div>
+
+</div>
 
     <!-- 批次按鈕 -->
     <button id="btn-batch-edit" class="btn btn-batch" onclick="openBatchEdit()">
@@ -714,58 +719,61 @@
   const activeBtn = document.getElementById('tab-' + tab);
   if (activeBtn) activeBtn.classList.add('active');
 
-  // 定義模式判定
   const isStats = (tab === 'stats');
   const isFinance = (tab === 'finance');
-  const isEdit = (tab === 'edit');
-
-  // 2. 切換控制區塊顯示
-  const searchSection = document.getElementById('search-section');
-  if (searchSection) searchSection.classList.toggle('hidden', isStats);
   
-  const listSection = document.getElementById('section-list');
-  const statsSection = document.getElementById('section-stats');
+  // 2. 取得三個核心區塊
+  const searchSection = document.getElementById('search-section'); // 搜尋列
+  const listSection = document.getElementById('section-list');     // 列表容器 (卡片/表格)
+  const statsSection = document.getElementById('section-stats');   // 報名現況容器
 
-  // 3. 執行渲染分流
+  // 3. 執行「場景切換」邏輯
   if (isStats) {
-    // 【模式三：報名現況 / 統計模式】
-    if (listSection) listSection.classList.add('hidden');
+    // --- 【報名現況模式】 ---
+    if (searchSection) searchSection.classList.add('hidden'); // 隱藏搜尋列
+    if (listSection) {
+      listSection.classList.add('hidden');
+      listSection.innerHTML = ""; // 關鍵：清空列表內容，防止切換回來的殘影
+    }
     if (statsSection) {
       statsSection.classList.remove('hidden');
-      refreshStats(); // 執行專屬統計圖表與數據邏輯
+      refreshStats(); // 執行統計渲染
     }
   } else {
-    // 【列表模式：行政編修 或 財務登記】
-    if (statsSection) statsSection.classList.add('hidden');
+    // --- 【列表模式 (行政/財務)】 ---
+    if (statsSection) {
+      statsSection.classList.add('hidden');
+      statsSection.innerHTML = ""; // 關鍵：隱藏並清空統計內容
+    }
+    if (searchSection) searchSection.classList.remove('hidden'); // 顯示搜尋列
     if (listSection) {
       listSection.classList.remove('hidden');
 
-      // 根據 tab 直接決定渲染哪一套模組，不再經過 renderList
+      // 根據子頁籤分流渲染
       if (isFinance) {
-        // --- 繳費登記渲染重點：表格、窗口分組、總額、餘額顏色 ---
+        // 渲染「繳費登記」專屬搜尋器 UI 與表格
         renderFinanceModule(currentFilteredData); 
       } else {
-        // --- 資料編修渲染重點：卡片、20筆分頁、個資摘要、取消狀態 ---
+        // 渲染「資料編修」專屬搜尋器 UI 與卡片
         renderAdminModule(currentFilteredData); 
       }
     }
   }
 
-  updateBatchUI(); // 更新批次操作 UI (如刪除/導出按鈕)
+  updateBatchUI(); 
 }
 
     // --- 統一搜尋處理 ---
-function handleSearch() {
+function handleAdminSearch() {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
-    // 1. 自動偵測目前的搜尋輸入框 (相容 list-search 或 search-input)
-    const searchInput = document.getElementById('search-input') || document.getElementById('list-search');
+    // 1. 抓取行政專屬搜尋框 (假設 ID 為 admin-search)
+    const searchInput = document.getElementById('admin-search');
     const key = (searchInput?.value || '').toLowerCase().trim();
     
-    // 2. 搜尋時務必重置頁碼回到第一頁
-    currentPage = 1;
+    currentPage = 1; // 重置頁碼
 
-    // 3. 執行過濾並存入全域變數 currentFilteredData
+    // 2. 執行過濾
     currentFilteredData = fullData.filter(m => {
       if (!key) return true;
       return (m.name && m.name.toLowerCase().includes(key)) ||
@@ -774,15 +782,51 @@ function handleSearch() {
              (m.contactName && m.contactName.toLowerCase().includes(key));
     });
 
-    // 4. 更新 UI 統計數字
-    const statsEl = document.getElementById('stats-count');
-    if (statsEl) statsEl.innerText = `${currentFilteredData.length} 筆`;
+    // 3. 更新統計數字
+    const statsEl = document.getElementById('admin-stats-count');
+    if (statsEl) statsEl.innerText = `共 ${currentFilteredData.length} 筆`;
     
-    // 5. 渲染列表
-    renderList(currentFilteredData);
+    // 4. 渲染行政卡片
+    renderAdminModule(currentFilteredData);
   }, 250);
 }
 
+    function handleFinanceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    // 1. 同時抓取「關鍵字」與「窗口下拉選單」的值
+    const searchInput = document.getElementById('finance-search');
+    const windowSelect = document.getElementById('window-filter-select');
+    
+    const key = (searchInput?.value || '').toLowerCase().trim();
+    const selectedWindow = windowSelect?.value || 'all'; // 預設為 'all' (顯示所有)
+
+    // 2. 複合過濾邏輯
+    currentFilteredData = fullData.filter(m => {
+      // (A) 關鍵字比對 (姓名、手機、教會、窗口)
+      const matchKey = !key || 
+             (m.name && m.name.toLowerCase().includes(key)) ||
+             (m.phone && m.phone.includes(key)) ||
+             (m.church && m.church.toLowerCase().includes(key)) ||
+             (m.contactName && m.contactName.toLowerCase().includes(key));
+
+      // (B) 窗口下拉選單比對
+      // 統一將空值視為 "個人報名" 進行比對
+      const mWindow = (m.contactName || "").trim() || "個人報名";
+      const matchWindow = (selectedWindow === 'all') || (mWindow === selectedWindow);
+
+      // 同時符合 A 與 B 才留下
+      return matchKey && matchWindow;
+    });
+
+    // 3. 更新財務統計 (如：當前顯示幾筆)
+    const statsEl = document.getElementById('finance-stats-count');
+    if (statsEl) statsEl.innerText = `顯示 ${currentFilteredData.length} 筆`;
+    
+    // 4. 渲染財務表格 (保持原本的窗口分組邏輯)
+    renderFinanceModule(currentFilteredData);
+  }, 250);
+}
     // --- 排序 ---
     function sortData(data) {
       return [...data].sort((a, b) => {
