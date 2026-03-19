@@ -1239,51 +1239,66 @@ function changePage(delta) {
 
     // --- 統計 ---
     async function refreshStats() {
-  // 1. 取得主要容器 (通常是列表與統計共用的那個)
-  const statsContainer = document.getElementById('stats-container'); // 或是你專屬的統計容器
+  const statsContainer = document.getElementById('stats-container');
+  if (!statsContainer) return;
 
-  // 3. 顯示讀取中狀態
-  if (statsContainer) {
-      statsContainer.style.display = 'block'; // 確保它是顯示的
-      statsContainer.innerHTML = `
-        <div class="stats-card" style="grid-column: 1/-1; text-align: center; padding: 40px;">
-          <div class="spinner"></div> 正在分析報名數據...
-        </div>`;
-  }
+  // 1. 強制顯示統計容器，隱藏列表容器 (假設列表容器 ID 是 section-list)
+  statsContainer.style.display = 'grid'; // 建議用 grid 以配合卡片佈局
+  const listContainer = document.getElementById('section-list');
+  if (listContainer) listContainer.style.display = 'none';
 
-  const res = await api({ 
-    action: 'getRegistrationStats', 
-    token: sessionStorage.getItem('admin_token') 
-  });
+  // 2. 顯示讀取中
+  statsContainer.innerHTML = `
+    <div class="stats-card" style="grid-column: 1/-1; text-align: center; padding: 40px;">
+      <div class="spinner"></div> 正在分析報名數據...
+    </div>`;
 
-  if (res && res.success) {
-    // 渲染儀表板
-    renderStatsDashboard(res.data);
-  } else {
-    if (statsContainer) statsContainer.innerHTML = '<div class="stats-card">❌ 無法載入統計資料</div>';
+  try {
+    const res = await api({ 
+      action: 'getRegistrationStats', 
+      token: sessionStorage.getItem('admin_token') 
+    });
+
+    if (res && res.success && res.data) {
+      // 3. 渲染儀表板
+      renderStatsDashboard(res.data);
+    } else {
+      statsContainer.innerHTML = `<div class="stats-card" style="grid-column: 1/-1;">❌ 無法載入統計資料：${res?.message || '未知錯誤'}</div>`;
+    }
+  } catch (err) {
+    statsContainer.innerHTML = `<div class="stats-card" style="grid-column: 1/-1;">⚠️ 系統錯誤，請檢查網路連線</div>`;
   }
 }
 
     function renderStatsDashboard(data) {
-      const container = document.getElementById('stats-container');
-      container.innerHTML = '';
-      const configs = [
-        { title: "👫 性別 × 報名管道", key: "gender" },
-        { title: "🎓 報名身分 × 報名管道", key: "role" },
-        { title: "✝️ 基督徒 × 報名管道", key: "isChristian" }, // 修正 key 名稱
-        { title: "💧 是否受洗 × 報名管道", key: "isBaptized" }, // 新增
-        { title: "✨ 曾參加 SHINE × 報名管道", key: "isAttended" }, // 新增
-        { title: "⛪ 所屬教會 × 報名管道", key: "church" }
-      ];
-      configs.forEach(conf => {
-        if (data[conf.key]) {
-          const card = document.createElement('div');
-          card.className = 'stats-card';
-          card.innerHTML = `<h3>${conf.title}</h3>` + createTableHtml(data.channels, data[conf.key]);
-          container.appendChild(card);
-        }
-      });
+  const container = document.getElementById('stats-container');
+  if (!container) return;
+  
+  container.innerHTML = ''; // 清空讀取動畫
+
+  const configs = [
+    { title: "👫 性別 × 報名管道", key: "gender" },
+    { title: "🎓 報名身分 × 報名管道", key: "role" },
+    { title: "✝️ 基督徒 × 報名管道", key: "isChristian" },
+    { title: "💧 是否受洗 × 報名管道", key: "isBaptized" },
+    { title: "✨ 曾參加 SHINE × 報名管道", key: "isAttended" },
+    { title: "⛪ 所屬教會 × 報名管道", key: "church" }
+  ];
+
+  configs.forEach(conf => {
+    const card = document.createElement('div');
+    card.className = 'stats-card';
+    
+    // 檢查資料是否存在且有內容
+    if (data[conf.key] && Object.keys(data[conf.key]).length > 0) {
+      card.innerHTML = `<h3>${conf.title}</h3>` + createTableHtml(data.channels, data[conf.key]);
+    } else {
+      // 如果該項沒資料，顯示灰色的提示
+      card.innerHTML = `<h3>${conf.title}</h3><p style="color: #888; text-align: center; padding: 20px;">暫無數據</p>`;
     }
+    container.appendChild(card);
+  });
+}
 
     function createTableHtml(channels, groupData) {
       let html = `<table class="stats-table"><thead><tr><th>類別</th>`;
