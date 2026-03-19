@@ -1058,7 +1058,7 @@ function changePage(step) {
     // 將舊紀錄填入歷史區
     historyEl.innerText = m.adminNote || "尚未有異動紀錄";
     // 捲軸自動置底
-    setTimeout(() => { historyEl.scrollTop = historyEl.scrollHeight; }, 100);
+    historyEl.scrollTop = 0;
   }
 
   const noteEl = document.getElementById('m-adminNote');
@@ -1231,7 +1231,7 @@ function changePage(step) {
     // 產生並追加軌跡文字
     const now = new Date().toLocaleString('zh-TW', { hour12: false });
     const traceEntry = `\n--- 📅 ${now} (${adminName}) ---\n🔍 變動：${changeLogs.join(', ')}\n📝 原因：${userReason}\n`;
-    updateData['adminNote'] = (originalData.adminNote || "") + traceEntry;
+    updateData['adminNote'] = traceEntry + (originalData.adminNote || "") ;
   } else {
     // 沒變動則維持原本紀錄
     updateData['adminNote'] = originalData.adminNote || "";
