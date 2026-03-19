@@ -707,18 +707,42 @@
 
     // --- 分頁切換 ---
     function switchMainTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('tab-' + tab).classList.add('active');
+  currentTab = tab;
+  
+  // 1. 更新按鈕狀態
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById('tab-' + tab);
+  if (activeBtn) activeBtn.classList.add('active');
 
-      const isStats = (tab === 'stats');
-      document.getElementById('search-section').classList.toggle('hidden', isStats);
-      document.getElementById('section-list').classList.toggle('hidden', isStats);
-      document.getElementById('section-stats').classList.toggle('hidden', !isStats);
+  const isStats = (tab === 'stats');
+  
+  // 2. 切換區塊顯示 (確保 ID 正確)
+  // 搜尋列只有在統計模式才隱藏
+  const searchSection = document.getElementById('search-section');
+  if (searchSection) searchSection.classList.toggle('hidden', isStats);
+  
+  const listSection = document.getElementById('section-list');
+  const statsSection = document.getElementById('section-stats');
 
-      updateBatchUI();
-      if (isStats) refreshStats(); else handleSearch();
+  if (isStats) {
+    if (listSection) listSection.classList.add('hidden');
+    if (statsSection) {
+      statsSection.classList.remove('hidden');
+      refreshStats(); // 執行統計邏輯
     }
+  } else {
+    if (statsSection) statsSection.classList.add('hidden');
+    if (listSection) {
+      listSection.classList.remove('hidden');
+      
+      // 3. 關鍵修正：切換回資料編修或財務登記時，直接渲染 currentFilteredData
+      // 不要透過 handleSearch()，因為 handleSearch 有 250ms 延遲
+      renderList(currentFilteredData); 
+    }
+  }
+
+  updateBatchUI();
+}
 
     // --- 統一搜尋處理 ---
 function handleSearch() {
