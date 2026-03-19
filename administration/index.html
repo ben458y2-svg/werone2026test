@@ -657,6 +657,7 @@
     let currentDisplayData = [];
     let currentPage = 1;
     const pageSize = 20; // 每頁顯示 20 張
+    let originalData = {};
 
     // --- API 核心 ---
     async function api(payload) {
@@ -1117,59 +1118,120 @@ if (currentTab === 'edit') {
 
     // --- 儲存 ---
     async function submitEdit() {
-      const rowId = document.getElementById('edit-row-index').value;
-      const inputPaid = document.getElementById('m-paid').value;
+  const rowId = document.getElementById('edit-row-index').value;
+  const inputPaid = document.getElementById('m-paid').value;
+  const adminName = sessionStorage.getItem('admin_name') || "管理員";
 
-      if (rowId === "BATCH") {
-        if (!inputPaid || Number(inputPaid) <= 0) {
-          alert("❌ 批次模式下必須填寫「已繳金額」。");
-          return;
+  // --- 1. 批次模式 ---
+  if (rowId === "BATCH") {
+    if (!inputPaid || Number(inputPaid) <= 0) {
+      alert("❌ 批次模式下必須填寫「已繳金額」。");
+      return;
+    }
+    if (!confirm(`確定要將這 ${batchSelectedRows.length} 位成員，每位都登記已繳 $${inputPaid} 元嗎？`)) return;
+
+    const updates = batchSelectedRows.map(id => {
+      const m = fullData.find(x => String(x.row) === id);
+      const now = new Date().toLocaleString('zh-TW', { hour12: false });
+      return {
+        row: id,
+        data: {
+          ...m,
+          status: document.getElementById('m-status').value,
+          paid: Number(inputPaid),
+          subsidy: Number(document.getElementById('m-subsidy').value || 0),
+          payMethod: document.getElementById('m-payMethod').value,
+          payNote: document.getElementById('m-payNote').value,
+          receiver: document.getElementById('m-receiver').value,
+          adminNote: (m.adminNote || "") + `\n--- 📅 ${now} (${adminName}) ---\n[批次更新已繳金額: $${inputPaid}]\n`
         }
-        if (!confirm(`確定要將這 ${batchSelectedRows.length} 位成員，每位都登記已繳 $${inputPaid} 元嗎？`)) return;
+      };
+    });
 
-        const updates = batchSelectedRows.map(id => {
-          const m = fullData.find(x => String(x.row) === id);
-          return {
-            row: id,
-            data: {
-              ...m,
-              status: document.getElementById('m-status').value,
-              paid: Number(inputPaid),
-              subsidy: Number(document.getElementById('m-subsidy').value || 0),
-              payMethod: document.getElementById('m-payMethod').value,
-              payNote: document.getElementById('m-payNote').value,
-              receiver: document.getElementById('m-receiver').value,
-              adminNote: (m.adminNote || "") + " [批次更新]"
-            }
-          };
-        });
+    const res = await api({ action: 'batchUpdate', token: sessionStorage.getItem('admin_token'), updates, adminName: adminName });
+    if (res && res.success) { alert("✅ 批次更新成功！"); closeModal(); fetchData(); }
+    return;
+  }
 
-        const res = await api({ action: 'batchUpdate', token: sessionStorage.getItem('admin_token'), updates, adminName: sessionStorage.getItem('admin_name') });
-        if (res && res.success) { alert("✅ 批次更新成功！"); closeModal(); fetchData(); }
-        return;
+  // --- 2. 單人模式：必填驗證 ---
+  const reqs = Array.from(document.querySelectorAll('#editModal .v-req')).filter(el => el.offsetParent !== null);
+  let missing = [];
+  reqs.forEach(el => {
+    el.style.border = "2px solid var(--shine-black)";
+    const val = el.value ? el.value.trim() : "";
+    if (val === "" && el.id !== 'm-medical') {
+      const labelEl = el.closest('.form-group')?.querySelector('label');
+      missing.push(labelEl ? labelEl.innerText : el.id);
+      el.style.setProperty('border', '2px solid var(--shine-red)', 'important');
+    }
+  });
+  if (missing.length > 0) { alert("⚠️ 請填寫以下必填欄位：\n• " + missing.join("\n• ")); return; }
+
+  // --- 3. 單人模式：變動偵測與軌跡生成 ---
+  const updateData = {};
+  const allFields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','status','paid','subsidy','payMethod','receiver','payNote'];
+  
+  let changeLogs = [];
+  allFields.forEach(f => {
+    const el = document.getElementById('m-' + f);
+    const newVal = el?.value || "";
+    updateData[f] = newVal;
+
+    // 比對原始資料 (排除 adminNote 本身不比對)
+    if (f !== 'adminNote') {
+      let oldVal = String(originalData[f] || "").trim();
+      let compareNew = String(newVal).trim();
+
+      // 日期比對校正
+      if (f === 'birthday' && oldVal && oldVal.includes('T')) {
+        oldVal = new Date(oldVal).toISOString().split('T')[0];
       }
 
-      // 單人模式必填驗證
-      const reqs = Array.from(document.querySelectorAll('#editModal .v-req')).filter(el => el.offsetParent !== null);
-      let missing = [];
-      reqs.forEach(el => {
-        el.style.border = "2px solid var(--shine-black)";
-        const val = el.value ? el.value.trim() : "";
-        if (val === "" && el.id !== 'm-medical') {
-          const labelEl = el.closest('.form-group')?.querySelector('label');
-          missing.push(labelEl ? labelEl.innerText : el.id);
-          el.style.setProperty('border', '2px solid var(--shine-red)', 'important');
-        }
-      });
-      if (missing.length > 0) { alert("⚠️ 請填寫以下必填欄位：\n• " + missing.join("\n• ")); return; }
-
-      const updateData = {};
-      const allFields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','adminNote','status','paid','subsidy','payMethod','receiver','payNote'];
-      allFields.forEach(f => updateData[f] = document.getElementById('m-' + f)?.value || "");
-
-      const res = await api({ action: 'updateParticipant', token: sessionStorage.getItem('admin_token'), row: rowId, data: updateData, adminName: sessionStorage.getItem('admin_name') });
-      if (res && res.success) { alert("✅ 資料已同步！"); isModalDirty = false; closeModal(); fetchData(); }
+      if (compareNew !== oldVal) {
+        // 尋找對應的 Label 名稱
+        const label = el?.closest('.form-group')?.querySelector('label')?.innerText || f;
+        changeLogs.push(`${label}: [${oldVal || '空'}] ➡️ [${compareNew || '空'}]`);
+      }
     }
+  });
+
+  // 獲取當前輸入的異動原因
+  const userReason = document.getElementById('m-adminNote').value.trim();
+
+  // 核心檢查：如果有改東西但沒寫原因
+  if (changeLogs.length > 0) {
+    if (!userReason) {
+      alert("⚠️ 偵測到資料有變動，請在「資料異動備註」輸入更新原因以記錄軌跡。");
+      document.getElementById('m-adminNote').focus();
+      document.getElementById('m-adminNote').style.border = "2px solid var(--shine-red)";
+      return;
+    }
+
+    // 產生並追加軌跡文字
+    const now = new Date().toLocaleString('zh-TW', { hour12: false });
+    const traceEntry = `\n--- 📅 ${now} (${adminName}) ---\n🔍 變動：${changeLogs.join(', ')}\n📝 原因：${userReason}\n`;
+    updateData['adminNote'] = (originalData.adminNote || "") + traceEntry;
+  } else {
+    // 沒變動則維持原本紀錄
+    updateData['adminNote'] = originalData.adminNote || "";
+  }
+
+  // --- 4. 送出資料 ---
+  const res = await api({ 
+    action: 'updateParticipant', 
+    token: sessionStorage.getItem('admin_token'), 
+    row: rowId, 
+    data: updateData, 
+    adminName: adminName 
+  });
+
+  if (res && res.success) { 
+    alert("✅ 資料已同步並記錄異動軌跡！"); 
+    isModalDirty = false; 
+    closeModal(); 
+    fetchData(); 
+  }
+}
 
     // --- 統計 ---
     async function refreshStats() {
