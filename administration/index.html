@@ -608,7 +608,7 @@
             <div class="form-group"><label>曾參加SHINE營會</label><select id="m-isAttended" class="v-req"><option>是</option><option>否</option></select></div>
             <div class="form-group"><label>飲食需求</label><select id="m-dietary" class="v-req"><option>葷食</option><option>蛋奶素</option><option>純素</option></select></div>
             <div class="form-group" style="grid-column: 1 / -1;"><label>特殊狀況與注意事項</label><input type="text" id="m-medical" class="v-req"></div>
-            <div class="form-group"><label style="background: var(--shine-yellow)">取消報名</label><select id="m-status"><option>取消報名</option></select></div>
+            <div class="form-group"><label style="background: var(--shine-yellow)">取消報名</label><select id="m-status"><option value="">正常報名</option><option value="取消報名">取消報名</option></select></div>
           </div>
         </div>
 
@@ -865,7 +865,6 @@
         const pagedData = sorted.slice(start, end); // 只取該頁的 20 筆
         // --- 分頁邏輯結束 ---
         const cardsHtml = pagedData.map(m => {
-          container.innerHTML = pagedData.map(m => {
           // 1. 邏輯計算與狀態判定
           const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
           const isCancelled = (m.status === '取消報名'); // 判斷是否取消
@@ -1067,14 +1066,12 @@ function changePage(step) {
             }
           } catch (e) { console.error("日期格式錯誤:", e); }
         }
-
-        // --- 2. 特殊處理：勾選框欄位 (status / 第 30 欄) ---
+        // 在 openAction 的 fields.forEach 內
         if (f === 'status') {
-          // 邏輯：如果資料是 "取消報名"，則勾選框為 checked
-          el.checked = (val === "取消報名");
-          return; 
-        }
-
+        // 確保 val 是 "取消報名" 時才選中，否則選空值 (正常報名)
+        el.value = (val === '取消報名') ? '取消報名' : '';
+        return;
+}
         // --- 3. 通用處理：SELECT 與一般 INPUT ---
         if (el.tagName === 'SELECT') {
           el.value = val || (el.options[0] ? el.options[0].value : "");
