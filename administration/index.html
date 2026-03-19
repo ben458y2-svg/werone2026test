@@ -1200,18 +1200,28 @@ function changePage(step) {
 
     // 比對原始資料 (排除 adminNote 本身不比對)
     if (f !== 'adminNote') {
-      let oldVal = String(originalData[f] || "").trim();
+      // 1. 統一正規化：將 null/undefined 轉為空字串，並去空白
+      let oldVal = (originalData[f] == null) ? "" : String(originalData[f]).trim();
       let compareNew = String(newVal).trim();
 
-      // 日期比對校正
+      // --- 2. 關鍵修正：處理「尚未繳費」與「空值」的等價性 ---
+      // 如果你的系統邏輯中，空值就代表尚未繳費，我們就判定它們「相等」
+      if (f === 'status') {
+        // 如果舊值是 "尚未繳費" 且新值是 "" (或反過來)，則視為沒變動
+        const isOldEmpty = (oldVal === "" || oldVal === "尚未繳費");
+        const isNewEmpty = (compareNew === "" || compareNew === "尚未繳費");
+        if (isOldEmpty && isNewEmpty) return; // 跳過，不計入變動
+      }
+
+      // 日期比對校正 (保持原本邏輯)
       if (f === 'birthday' && oldVal && oldVal.includes('T')) {
         oldVal = new Date(oldVal).toISOString().split('T')[0];
       }
 
+      // 3. 執行真正的比對
       if (compareNew !== oldVal) {
-        // 尋找對應的 Label 名稱
         const label = el?.closest('.form-group')?.querySelector('label')?.innerText || f;
-        changeLogs.push(`${label}: [${oldVal || '空'}] ➡️ [${compareNew || '空'}]`);
+        changeLogs.push(`${label}: [${oldVal || '無'}] ➡️ [${compareNew || '無'}]`);
       }
     }
   });
