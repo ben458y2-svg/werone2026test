@@ -111,6 +111,11 @@
     .finance-table tr:hover:not(.group-header):not(.table-summary-row) { background: #fffde7; cursor: pointer; }
 
     .group-header { background: #e3f2fd !important; font-weight: 900; border-bottom: 2px solid var(--shine-black) !important; color: var(--shine-blue); }
+    .group-header { cursor: pointer; transition: background 0.2s; }
+    .group-header:hover { background: #d1e9ff !important; }
+    .group-header i { margin-right: 10px; transition: transform 0.2s; display: inline-block; }
+    .group-header.collapsed i { transform: rotate(-90deg); }
+    .collapsed-row { display: none !important; }
     .table-summary-row { background-color: #f8f9fa !important; font-weight: bold; border-top: 2px solid #333; border-bottom: 2px solid #333; }
 
     .balance-red { color: var(--shine-red); font-weight: 900; }
@@ -130,6 +135,12 @@
     .bg-red { background: var(--shine-red); color: white; }
     .bg-green { background: var(--shine-lime); color: black; }
     .bg-yellow { background: var(--shine-yellow); color: black; }
+
+    .search-container { margin-bottom: 20px; position: sticky; top: 0; z-index: 10; background: #f0f0f0; padding: 10px 0; }
+    #list-search { 
+      padding: 12px 20px; border: 3px solid var(--shine-black); 
+      box-shadow: 6px 6px 0px var(--shine-black); font-weight: 900; 
+    }
 
     #batch-summary-info { background: #fff9c4; padding: 15px; border: 3px dashed #000; margin-bottom: 20px; font-weight: 900; }
     .hidden { display: none !important; }
@@ -379,6 +390,16 @@
         return a.name.localeCompare(b.name);
       });
     }
+
+    function filterAndRender(data) {
+      const searchTerm = document.getElementById('list-search')?.value.toLowerCase() || "";
+      const filtered = data.filter(m => 
+        m.name.toLowerCase().includes(searchTerm) || 
+        (m.church && m.church.toLowerCase().includes(searchTerm)) ||
+        (m.contactName && m.contactName.toLowerCase().includes(searchTerm))
+      );
+      renderList(filtered);
+    }
     
     // --- 渲染清單 (包含模式判斷與 1, 2, 3, 4, 5 項修正) ---
     function renderList(data) {
@@ -389,91 +410,73 @@
         container.classList.add('finance-mode');
         
         let html = `
+          <div class="search-container">
+            <input type="text" id="list-search" placeholder="🔍 輸入姓名、教會或窗口進行快速過濾..." oninput="filterAndRender(globalData)">
+          </div>
           <table class="finance-table">
             <thead>
               <tr>
                 <th style="width:40px;"><input type="checkbox" onchange="selectAll(this)"></th>
-                <th>姓名</th>
-                <th>教會</th>
-                <th>繳費狀態</th>
-                <th style="text-align:right;">應收</th>
-                <th style="text-align:right;">補助</th>
-                <th style="text-align:right;">已繳</th>
-                <th style="text-align:right;">待繳</th>
-                <th>繳費備註</th>
+                <th>姓名</th><th>教會</th><th>繳費狀態</th>
+                <th style="text-align:right;">應收</th><th style="text-align:right;">補助</th>
+                <th style="text-align:right;">已繳</th><th style="text-align:right;">待繳</th>
+                <th>備註</th>
               </tr>
             </thead>
             <tbody>`;
         
         let lastWindow = null;
         let gDue = 0, gPaid = 0, gSub = 0;
-
-        // 小計列渲染函式 (對應扁平化欄位)
-        const renderGroupSummary = (name, due, paid, sub) => {
-          const bal = due - paid - sub;
-          return `
-            <tr class="table-summary-row">
-              <td colspan="3" style="text-align:right; color:#555;">📊 [${name}] 窗口對帳總計：</td>
-              <td>-</td>
-              <td style="text-align:right;">$${due}</td>
-              <td style="text-align:right;">$${sub}</td>
-              <td style="text-align:right; color:blue;">$${paid}</td>
-              <td style="text-align:right;" class="${bal > 0 ? 'balance-red' : 'balance-green'}">$${bal}</td>
-              <td>-</td>
-            </tr>`;
-        };
+        let groupIndex = 0; // 用於收合識別
 
         sorted.forEach((m, index) => {
           const currentWindow = (m.contactName || "").trim();
-          const displayGroupName = currentWindow || "個人報名";
-          
-          // 邏輯判定：應收 - 已繳 - 補助 = 0 則完成
           const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
-          const isComplete = (balance <= 0); 
-          const statusText = isComplete ? "完成報名" : "待繳費";
-          const statusClass = isComplete ? "bg-green" : "bg-red";
+          const isComplete = (balance <= 0);
 
-          // 偵測窗口切換，插入小計 (個人報名不顯示小計)
+          // 窗口切換：插入前一組的小計列
           if (lastWindow !== null && currentWindow !== lastWindow && lastWindow !== "") {
-            html += renderGroupSummary(lastWindow, gDue, gPaid, gSub);
+            html += renderGroupSummary(lastWindow, gDue, gPaid, gSub, groupIndex);
             gDue = 0; gPaid = 0; gSub = 0;
+            groupIndex++;
           }
 
-          // 插入分群標頭 (窗口名稱)
+          // 插入分群標頭 (新增電話顯示與收合點擊)
           if (currentWindow !== lastWindow) {
+            const isIndiv = currentWindow === "";
             html += `
-              <tr class="group-header">
+              <tr class="group-header" onclick="toggleGroup(${groupIndex})">
                 <td colspan="9">
-                  ${currentWindow === "" ? "📍 個人報名區域" : "📦 窗口：" + currentWindow}
+                  <i>▼</i>
+                  <strong>${isIndiv ? "📍 個人報名區域" : "📦 窗口：" + currentWindow}</strong>
+                  ${(!isIndiv && m.contactPhone) ? `<span style="margin-left:15px; font-size:12px; font-weight:normal; color:#555;">📱 聯絡窗口電話：${m.contactPhone}</span>` : ''}
                 </td>
               </tr>`;
             lastWindow = currentWindow;
           }
 
-          // 累加團報小計
           if (currentWindow !== "") {
             gDue += Number(m.totalDue || 0);
             gPaid += Number(m.paid || 0);
             gSub += Number(m.subsidy || 0);
           }
 
-          // 表格主體內容 (單行扁平化)
+          // 核心資料列 (增加 group-index 類別供收合)
           html += `
-            <tr onclick="openAction(${m.row})">
-              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="${m.row}" onchange="updateBatchUI()"></td>
+            <tr onclick="openAction(${m.row})" class="group-row-${groupIndex}">
+              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="${m.row}"></td>
               <td><strong>${m.name}</strong></td>
               <td>${m.church || ''}</td>
-              <td><span class="badge ${statusClass}">${statusText}</span></td>
-              <td style="text-align:right;">${m.totalDue || 0}</td>
-              <td style="text-align:right;">${m.subsidy || 0}</td>
-              <td style="text-align:right; color:blue; font-weight:bold;">${m.paid || 0}</td>
+              <td><span class="badge ${isComplete ? 'bg-green' : 'bg-red'}">${isComplete ? '完成' : '待繳'}</span></td>
+              <td style="text-align:right;">${m.totalDue}</td>
+              <td style="text-align:right;">${m.subsidy}</td>
+              <td style="text-align:right; color:blue;">${m.paid}</td>
               <td style="text-align:right;" class="${balance > 0 ? 'balance-red' : 'balance-green'}">${balance}</td>
-              <td style="font-size:12px; color:#666; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${m.payNote || ''}</td>
+              <td style="font-size:11px;">${m.payNote || ''}</td>
             </tr>`;
             
-          // 如果是最後一筆且是團報，補上最後一個小計
           if (index === sorted.length - 1 && currentWindow !== "") {
-            html += renderGroupSummary(currentWindow, gDue, gPaid, gSub);
+            html += renderGroupSummary(currentWindow, gDue, gPaid, gSub, groupIndex);
           }
         });
 
@@ -563,6 +566,25 @@
       isModalDirty = false;
     }
 
+
+    // 3. 收合切換函式
+    function toggleGroup(index) {
+      const rows = document.querySelectorAll(`.group-row-${index}`);
+      const header = rows[0].previousElementSibling; // 取得標頭列
+      rows.forEach(row => row.classList.toggle('collapsed-row'));
+      header.classList.toggle('collapsed');
+    }
+
+    function renderGroupSummary(name, due, paid, sub, index) {
+      const bal = due - paid - sub;
+      return `<tr class="table-summary-row group-row-${index}">
+                <td colspan="3" style="text-align:right;">📊 [${name}] 總計：</td>
+                <td>-</td><td style="text-align:right;">$${due}</td>
+                <td style="text-align:right;">$${sub}</td><td style="text-align:right;">$${paid}</td>
+                <td style="text-align:right;" class="${bal > 0 ? 'balance-red' : 'balance-green'}">$${bal}</td>
+                <td>-</td>
+              </tr>`;
+    }
     // --- 單人編輯開啟 ---
     function openAction(rowId) {
       const m = fullData.find(item => item.row === rowId);
