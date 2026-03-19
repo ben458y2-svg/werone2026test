@@ -1045,20 +1045,19 @@ function changePage(step) {
       isModalDirty = false;
     }
 
-    // --- 單人編輯開啟 ---
     function openAction(rowId) {
-      const m = fullData.find(item => item.row === rowId);
-      if (!m) return;
+  const m = fullData.find(item => item.row === rowId);
+  if (!m) return;
 
-      // 1. 存下原始資料複本
-      originalData = JSON.parse(JSON.stringify(m));
+  // 1. 存下原始資料複本
+  originalData = JSON.parse(JSON.stringify(m));
 
-      // --- 關鍵修正 1：處理備註顯示與清空 ---
+  // --- 關鍵修正：處理歷史紀錄顯示與本次輸入框清空 ---
   // 歷史紀錄填入下方唯讀區
   const historyEl = document.getElementById('m-history-logs');
   if (historyEl) {
     historyEl.innerText = m.adminNote || "尚未有異動紀錄";
-    // 讓捲軸自動滾到最下方，看到最新的紀錄
+    // 讓捲軸自動滾到最下方
     setTimeout(() => { historyEl.scrollTop = historyEl.scrollHeight; }, 100);
   }
 
@@ -1068,18 +1067,14 @@ function changePage(step) {
     noteEl.value = ""; 
     noteEl.style.border = "2px solid var(--shine-black)";
   }
-      
-      document.getElementById('edit-row-index').value = m.row;
-      document.getElementById('batch-summary-info').classList.add('hidden');
+  
+  document.getElementById('edit-row-index').value = m.row;
+  document.getElementById('batch-summary-info').classList.add('hidden');
 
-      const fields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','status','paid','subsidy','payMethod','receiver','payNote'];
-      fields.forEach(f => {
-        const el = document.getElementById('m-' + f);
-        if (!el) return;
-
-        let val = m[f] || "";
-
-        // 這裡我們不再處理 adminNote，因為已經在上面手動處理了
+  const fields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','status','paid','subsidy','payMethod','receiver','payNote'];
+  
+  fields.forEach(f => {
+    // 已經手動處理過 adminNote，迴圈內跳過
     if (f === 'adminNote') return; 
 
     const el = document.getElementById('m-' + f);
@@ -1087,42 +1082,47 @@ function changePage(step) {
 
     let val = m[f] || "";
 
-    // 日期處理
+    // --- 處理日期欄位 ---
     if (f === 'birthday' && val) {
       try {
         const d = new Date(val);
         if (!isNaN(d.getTime())) {
           el.value = d.toISOString().split('T')[0];
-          return;
+          return; // 處理完畢
         }
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error("日期解析失敗:", e); }
     }
 
-    // 狀態處理
+    // --- 處理狀態欄位 ---
     if (f === 'status') {
       el.value = (val === '取消報名') ? '取消報名' : '';
       return;
     }
-      });
 
-      // 在 openAction 函式的最後面
-const financeSec = document.getElementById('finance-module');
-const allSections = document.querySelectorAll('#modal-fields-container .form-section');
-
-if (currentTab === 'edit') {
-  // 如果是在資料編修分頁，隱藏財務模組，顯示其他所有區塊
-  if (financeSec) financeSec.classList.add('hidden');
-  allSections.forEach(s => s.classList.remove('hidden'));
-} else {
-  // 如果是在財務分頁，顯示財務模組，隱藏其他（如個人資料等）
-  if (financeSec) financeSec.classList.remove('hidden');
-  allSections.forEach(s => s.classList.add('hidden'));
-}
-
-      document.querySelector('#editModal h2').innerText = `修改成員資料：${m.name}`;
-      document.getElementById('editModal').classList.remove('hidden');
-      isModalDirty = false;
+    // --- 通用賦值：SELECT 與一般 INPUT ---
+    if (el.tagName === 'SELECT') {
+      el.value = val || (el.options[0] ? el.options[0].value : "");
+    } else {
+      el.value = val;
     }
+  });
+
+  // --- 財務模組顯示/隱藏邏輯 ---
+  const financeSec = document.getElementById('finance-module');
+  const allSections = document.querySelectorAll('#modal-fields-container .form-section');
+
+  if (currentTab === 'edit') {
+    if (financeSec) financeSec.classList.add('hidden');
+    allSections.forEach(s => s.classList.remove('hidden'));
+  } else {
+    if (financeSec) financeSec.classList.remove('hidden');
+    allSections.forEach(s => s.classList.add('hidden'));
+  }
+
+  document.querySelector('#editModal h2').innerText = `修改成員資料：${m.name}`;
+  document.getElementById('editModal').classList.remove('hidden');
+  isModalDirty = false;
+}
 
     function closeModal() {
       if (isModalDirty && !confirm("⚠️ 尚未儲存，確定關閉？")) return;
