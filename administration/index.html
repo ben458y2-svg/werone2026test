@@ -772,6 +772,29 @@
 
       if (currentTab === 'finance') {
         container.classList.add('finance-mode');
+
+        // --- 關鍵修正：補上表格外殼，否則 tbody 會是 null ---
+    container.innerHTML = `
+      <div class="finance-table-wrapper" style="width:100%; overflow-x:auto; background:white; border:2px solid var(--shine-black); border-radius:8px;">
+        <table class="shine-table" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="background:var(--shine-black); color:white;">
+              <th style="width:40px; padding:12px;">選</th>
+              <th>姓名</th>
+              <th>教會</th>
+              <th>狀態</th>
+              <th style="text-align:right;">應繳</th>
+              <th style="text-align:right;">補助</th>
+              <th style="text-align:right;">已繳</th>
+              <th style="text-align:right;">餘額</th>
+              <th>財務備註</th>
+            </tr>
+          </thead>
+          <tbody id="finance-body">
+            </tbody>
+        </table>
+      </div>
+    `;
         const tbody = document.getElementById('finance-body');
 
         let lastWindow = null;
@@ -1231,11 +1254,37 @@ function changePage(step) {
 
     // --- 統計 ---
     async function refreshStats() {
-      const container = document.getElementById('stats-container');
-      container.innerHTML = '<div class="stats-card">計算中...</div>';
-      const res = await api({ action: 'getRegistrationStats', token: sessionStorage.getItem('admin_token') });
-      if (res && res.success) renderStatsDashboard(res.data);
-    }
+  // 1. 取得主要容器 (通常是列表與統計共用的那個)
+  const mainContainer = document.getElementById('section-list'); 
+  const statsContainer = document.getElementById('stats-container'); // 或是你專屬的統計容器
+
+  // 2. 清空主要容器，避免統計表格長在列表下方
+  if (mainContainer) {
+      mainContainer.innerHTML = ""; 
+      mainContainer.classList.remove('finance-mode'); // 移除財務模式樣式
+  }
+
+  // 3. 顯示讀取中狀態
+  if (statsContainer) {
+      statsContainer.style.display = 'block'; // 確保它是顯示的
+      statsContainer.innerHTML = `
+        <div class="stats-card" style="grid-column: 1/-1; text-align: center; padding: 40px;">
+          <div class="spinner"></div> 正在分析報名數據...
+        </div>`;
+  }
+
+  const res = await api({ 
+    action: 'getRegistrationStats', 
+    token: sessionStorage.getItem('admin_token') 
+  });
+
+  if (res && res.success) {
+    // 渲染儀表板
+    renderStatsDashboard(res.data);
+  } else {
+    if (statsContainer) statsContainer.innerHTML = '<div class="stats-card">❌ 無法載入統計資料</div>';
+  }
+}
 
     function renderStatsDashboard(data) {
       const container = document.getElementById('stats-container');
@@ -1243,7 +1292,9 @@ function changePage(step) {
       const configs = [
         { title: "👫 性別 × 報名管道", key: "gender" },
         { title: "🎓 報名身分 × 報名管道", key: "role" },
-        { title: "✝️ 基督徒 × 報名管道", key: "christian" },
+        { title: "✝️ 基督徒 × 報名管道", key: "isChristian" }, // 修正 key 名稱
+        { title: "💧 是否受洗 × 報名管道", key: "isBaptized" }, // 新增
+        { title: "✨ 曾參加 SHINE × 報名管道", key: "isAttended" }, // 新增
         { title: "⛪ 所屬教會 × 報名管道", key: "church" }
       ];
       configs.forEach(conf => {
