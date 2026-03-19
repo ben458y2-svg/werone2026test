@@ -212,6 +212,8 @@
       font-weight: 700;
     }
 
+    .bg-gray { background: #999 !important; color: white !important; }
+
     /* =========================================
        6. 財務表格
        ========================================= */
@@ -608,7 +610,6 @@
             <div class="form-group" style="grid-column: 1 / -1;"><label>特殊狀況與注意事項</label><input type="text" id="m-medical" class="v-req"></div>
             <div class="form-group"><label style="background: var(--shine-yellow)">取消報名</label><select id="m-status"><option>取消報名</option></select></div>
           </div>
-          </div>
         </div>
 
         <!-- 資料異動備註 -->
@@ -864,26 +865,37 @@
         const pagedData = sorted.slice(start, end); // 只取該頁的 20 筆
         // --- 分頁邏輯結束 ---
         const cardsHtml = pagedData.map(m => {
+          container.innerHTML = pagedData.map(m => {
           // 1. 邏輯計算與狀態判定
           const balance = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
+          const isCancelled = (m.status === '取消報名'); // 判斷是否取消
           const isComplete = (balance <= 0);
-          const statusClass = isComplete ? 'bg-green' : 'bg-red';
-          const statusText = isComplete ? '已繳清' : `待繳 $${balance}`;
+          
+          // 設定標籤顏色與文字 (如果取消了，標籤顯示灰色)
+          const statusClass = isCancelled ? 'bg-gray' : (isComplete ? 'bg-green' : 'bg-red');
+          const statusText = isCancelled ? '已取消' : (isComplete ? '已繳清' : `待繳 $${balance}`);
+
+          // 如果取消報名，整張卡片加上透明度與背景色
+          const cardStyle = isCancelled 
+            ? 'display: flex; flex-direction: column; min-height: 140px; opacity: 0.6; background: #f5f5f5;' 
+            : 'display: flex; flex-direction: column; min-height: 140px;';
 
           return `
-            <div class="item-card" onclick="openAction(${m.row})" style="display: flex; flex-direction: column; min-height: 140px;">
+            <div class="item-card" onclick="openAction(${m.row})" style="${cardStyle}">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <strong style="font-size: 1.15em;">${m.name}</strong>
+                <strong style="font-size: 1.15em; ${isCancelled ? 'text-decoration: line-through; color: #888;' : ''}">
+                  ${m.name}
+                </strong>
                 <span class="badge ${statusClass}" style="font-size: 11px; padding: 2px 8px;">${statusText}</span>
               </div>
 
               <div style="flex-grow: 1; border-top: 1px solid #eee; padding-top: 10px; font-size: 14px; color: #555;">
-                <div style="font-weight: 900; color: var(--shine-black); margin-bottom: 4px;">⛪ ${m.church || '未填教會'}</div>
+                <div style="font-weight: 900; color: ${isCancelled ? '#999' : 'var(--shine-black)'}; margin-bottom: 4px;">⛪ ${m.church || '未填教會'}</div>
                 <div style="color: #666; font-size: 13px;">📱 ${m.phone || '無電話紀錄'}</div>
               </div>
 
               <div style="margin-top: 12px; border-top: 1px dashed var(--shine-gray); padding-top: 8px;">
-                <div class="window-label" style="display: block; text-align: center; background: #f9f9f9; color: #777;">
+                <div class="window-label" style="display: block; text-align: center; background: ${isCancelled ? '#eee' : '#f9f9f9'}; color: #777;">
                   👤 窗口：${m.contactName || '個人'}
                 </div>
               </div>
