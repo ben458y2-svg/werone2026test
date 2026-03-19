@@ -615,10 +615,14 @@
         <!-- 資料異動備註 -->
         <div class="form-section note-section">
           <div class="section-title note-section-title">資料異動備註</div>
-          <div class="form-group">
-            <textarea id="m-adminNote" style="height: 60px;" placeholder="請輸入異動說明..."></textarea>
-          </div>
-        </div>
+          <div id="m-history-logs" style="background: #f0f0f0; border: 1px inset #ccc; padding: 10px; margin-bottom: 10px; max-height: 150px; overflow-y: auto; font-size: 13px; color: #444; white-space: pre-wrap; border-radius: 4px;">
+    暫無歷史紀錄
+  </div>
+
+  <div class="form-group">
+    <label style="color: var(--shine-red); font-weight: 900;">本次異動說明 *</label>
+    <textarea id="m-adminNote" style="height: 80px; border: 2px solid var(--shine-black);" placeholder="若有修改上方資料，請在此輸入原因..."></textarea>
+  </div>
       </div>
 
       <!-- 財務登記模組 -->
@@ -1049,46 +1053,56 @@ function changePage(step) {
       // 1. 存下原始資料複本
       originalData = JSON.parse(JSON.stringify(m));
 
-      // 2. 清空備註框，讓人員輸入「這一次」的原因
-      const noteEl = document.getElementById('m-adminNote');
-      if (noteEl) {
-      noteEl.value = ""; 
-      noteEl.style.border = "2px solid var(--shine-black)";
-      }
+      // --- 關鍵修正 1：處理備註顯示與清空 ---
+  // 歷史紀錄填入下方唯讀區
+  const historyEl = document.getElementById('m-history-logs');
+  if (historyEl) {
+    historyEl.innerText = m.adminNote || "尚未有異動紀錄";
+    // 讓捲軸自動滾到最下方，看到最新的紀錄
+    setTimeout(() => { historyEl.scrollTop = historyEl.scrollHeight; }, 100);
+  }
+
+  // 清空本次輸入框
+  const noteEl = document.getElementById('m-adminNote');
+  if (noteEl) {
+    noteEl.value = ""; 
+    noteEl.style.border = "2px solid var(--shine-black)";
+  }
       
       document.getElementById('edit-row-index').value = m.row;
       document.getElementById('batch-summary-info').classList.add('hidden');
 
-      const fields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','adminNote','status','paid','subsidy','payMethod','receiver','payNote'];
+      const fields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','status','paid','subsidy','payMethod','receiver','payNote'];
       fields.forEach(f => {
         const el = document.getElementById('m-' + f);
         if (!el) return;
 
         let val = m[f] || "";
 
-        // --- 1. 特殊處理：日期欄位 (birthday) ---
-        if (f === 'birthday' && val) {
-          try {
-            const d = new Date(val);
-            if (!isNaN(d.getTime())) {
-              // 轉換為 HTML5 input date 要求的 YYYY-MM-DD
-              el.value = d.toISOString().split('T')[0];
-              return; // 處理完畢，跳過後面的通用賦值
-            }
-          } catch (e) { console.error("日期格式錯誤:", e); }
+        // 這裡我們不再處理 adminNote，因為已經在上面手動處理了
+    if (f === 'adminNote') return; 
+
+    const el = document.getElementById('m-' + f);
+    if (!el) return;
+
+    let val = m[f] || "";
+
+    // 日期處理
+    if (f === 'birthday' && val) {
+      try {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) {
+          el.value = d.toISOString().split('T')[0];
+          return;
         }
-        // 在 openAction 的 fields.forEach 內
-        if (f === 'status') {
-        // 確保 val 是 "取消報名" 時才選中，否則選空值 (正常報名)
-        el.value = (val === '取消報名') ? '取消報名' : '';
-        return;
-}
-        // --- 3. 通用處理：SELECT 與一般 INPUT ---
-        if (el.tagName === 'SELECT') {
-          el.value = val || (el.options[0] ? el.options[0].value : "");
-        } else {
-          el.value = val;
-        }
+      } catch (e) { console.error(e); }
+    }
+
+    // 狀態處理
+    if (f === 'status') {
+      el.value = (val === '取消報名') ? '取消報名' : '';
+      return;
+    }
       });
 
       // 在 openAction 函式的最後面
