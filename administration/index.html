@@ -629,6 +629,7 @@
       <div class="form-section" id="finance-module" style="background: #e3f2fd; border: 3px solid var(--shine-blue);">
         <div class="section-title finance-section-title">財務繳費登記</div>
         <div class="grid-row">
+          <div class="form-group"><label>應繳金額</label><input type="number" id="m-totalDue"></div>
           <div class="form-group"><label>已繳金額</label><input type="number" id="m-paid"></div>
           <div class="form-group"><label>補助金額</label><input type="number" id="m-subsidy"></div>
           <div class="form-group">
@@ -771,28 +772,6 @@
 
       if (currentTab === 'finance') {
         container.classList.add('finance-mode');
-
-        let html = `
-          <div class="search-container">
-            <input type="text" id="list-search" placeholder="🔍 快速搜尋姓名、教會或窗口..." oninput="filterAndRender()">
-            <div id="batch-status-bar" class="hidden">
-              已選取 <span id="batch-count" style="color:var(--shine-red)">0</span> 筆資料
-            </div>
-          </div>
-          <table class="finance-table">
-            <thead>
-              <tr>
-                <th style="width:40px;"><input type="checkbox" id="main-select-all" onchange="selectAll(this)"></th>
-                <th>姓名</th><th>教會</th><th>狀態</th>
-                <th style="text-align:right;">應收</th><th style="text-align:right;">補助</th>
-                <th style="text-align:right;">已繳</th><th style="text-align:right;">待繳</th>
-                <th>備註</th>
-              </tr>
-            </thead>
-            <tbody id="finance-body"></tbody>
-          </table>`;
-
-        container.innerHTML = html;
         const tbody = document.getElementById('finance-body');
 
         let lastWindow = null;
@@ -1140,118 +1119,101 @@ function changePage(step) {
     // --- 儲存 ---
     async function submitEdit() {
   const rowId = document.getElementById('edit-row-index').value;
-  const inputPaid = document.getElementById('m-paid').value;
   const adminName = sessionStorage.getItem('admin_name') || "管理員";
+  const now = new Date().toLocaleString('zh-TW', { hour12: false });
 
-  // --- 1. 批次模式 ---
-  if (rowId === "BATCH") {
-    if (!inputPaid || Number(inputPaid) <= 0) {
-      alert("❌ 批次模式下必須填寫「已繳金額」。");
-      return;
-    }
-    if (!confirm(`確定要將這 ${batchSelectedRows.length} 位成員，每位都登記已繳 $${inputPaid} 元嗎？`)) return;
-
-    const updates = batchSelectedRows.map(id => {
-      const m = fullData.find(x => String(x.row) === id);
-      const now = new Date().toLocaleString('zh-TW', { hour12: false });
-      return {
-        row: id,
-        data: {
-          ...m,
-          status: document.getElementById('m-status').value,
-          paid: Number(inputPaid),
-          subsidy: Number(document.getElementById('m-subsidy').value || 0),
-          payMethod: document.getElementById('m-payMethod').value,
-          payNote: document.getElementById('m-payNote').value,
-          receiver: document.getElementById('m-receiver').value,
-          adminNote: (m.adminNote || "") + `\n--- 📅 ${now} (${adminName}) ---\n[批次更新已繳金額: $${inputPaid}]\n`
-        }
-      };
-    });
-
-    const res = await api({ action: 'batchUpdate', token: sessionStorage.getItem('admin_token'), updates, adminName: adminName });
-    if (res && res.success) { alert("✅ 批次更新成功！"); closeModal(); fetchData(); }
-    return;
-  }
-
-  // --- 2. 單人模式：必填驗證 ---
-  const reqs = Array.from(document.querySelectorAll('#editModal .v-req')).filter(el => el.offsetParent !== null);
-  let missing = [];
-  reqs.forEach(el => {
-    el.style.border = "2px solid var(--shine-black)";
-    const val = el.value ? el.value.trim() : "";
-    if (val === "" && el.id !== 'm-medical') {
-      const labelEl = el.closest('.form-group')?.querySelector('label');
-      missing.push(labelEl ? labelEl.innerText : el.id);
-      el.style.setProperty('border', '2px solid var(--shine-red)', 'important');
-    }
-  });
-  if (missing.length > 0) { alert("⚠️ 請填寫以下必填欄位：\n• " + missing.join("\n• ")); return; }
-
-  // --- 3. 單人模式：變動偵測與軌跡生成 ---
+  // --- 1. 分類定義 ---
+  // 行政類：變動時記錄於 adminNote，強制要求輸入 m-adminNote (大框)
+  const trackedAdminFields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','status'];
+  
+  // 財務類：變動時記錄於 payNote，強制要求輸入 m-payNote (財務備註小框)
+  const trackedFinanceFields = ['paid', 'subsidy', 'totalDue', 'payMethod', 'receiver'];
+  
+  const allFields = [...trackedAdminFields, ...trackedFinanceFields, 'payNote'];
+  
   const updateData = {};
-  const allFields = ['name','gender','birthday','phone','email','role','school','grade','church','isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','status','paid','subsidy','payMethod','receiver','payNote'];
+  let adminChangeLogs = [];
+  let financeChangeLogs = [];
 
-  // 這裡定義「需要追蹤變動並強制寫備註」的行政欄位 (排除財務相關)
-  const trackedFields = ['name','gender','birthday','phone','email','role','school','grade','church', 'isChristian','isBaptized','iceName','iceRel','icePhone','isAttended','dietary','medical','status'];
-  let changeLogs = [];
+  // --- 2. 偵測異動 ---
   allFields.forEach(f => {
     const el = document.getElementById('m-' + f);
     let newVal = el?.value || "";
     updateData[f] = newVal;
 
-    // 只有在「受追蹤清單」內的行政欄位才進行比對
-    if (trackedFields.includes(f)) {
-      // 統一正規化
-      let oldVal = (originalData[f] == null) ? "" : String(originalData[f]).trim();
-      let compareNew = String(newVal).trim();
+    let oldVal = (originalData[f] == null) ? "" : String(originalData[f]).trim();
+    let compareNew = String(newVal).trim();
 
-      // --- 修正：更嚴謹的狀態比對 ---
-      if (f === 'status') {
-        // 如果舊值是 "尚未繳費" 或 ""，我們統一視為 "EMPTY"
-        const isOldEmpty = (oldVal === "" || oldVal === "尚未繳費");
-        const isNewEmpty = (compareNew === "" || compareNew === "尚未繳費");
-        
-        // 只有「兩者皆為空」才算沒變動。
-        // 若從 "取消報名" 變回 ""，則 isOldEmpty 為 false，會觸發變動偵測。
-        if (isOldEmpty && isNewEmpty) return; 
-      }
+    // 數值等價判斷 (避免 0 與空值誤判)
+    if (['totalDue', 'subsidy', 'paid'].includes(f)) {
+      if (Number(oldVal || 0) === Number(compareNew || 0)) return;
+    }
 
-      // 日期處理 (保持不變)
-      if (f === 'birthday' && oldVal && oldVal.includes('T')) {
-        oldVal = new Date(oldVal).toISOString().split('T')[0];
-      }
+    // 狀態等價判斷
+    if (f === 'status') {
+      const isOldEmpty = (oldVal === "" || oldVal === "尚未繳費");
+      const isNewEmpty = (compareNew === "" || compareNew === "尚未繳費");
+      if (isOldEmpty && isNewEmpty) return;
+    }
 
-      // 執行比對
-      if (compareNew !== oldVal) {
-        const label = el?.closest('.form-group')?.querySelector('label')?.innerText || f;
-        changeLogs.push(`${label}: [${oldVal || '無'}] ➡️ [${compareNew || '無'}]`);
+    // 執行比對
+    if (compareNew !== oldVal) {
+      const label = el?.closest('.form-group')?.querySelector('label')?.innerText || f;
+      const logEntry = `${label}: [${oldVal || '0'}] ➡️ [${compareNew || '0'}]`;
+      
+      if (trackedAdminFields.includes(f)) {
+        adminChangeLogs.push(logEntry);
+      } else if (trackedFinanceFields.includes(f)) {
+        financeChangeLogs.push(logEntry);
       }
     }
   });
 
-  // 獲取當前輸入的異動原因
-  const userReason = document.getElementById('m-adminNote').value.trim();
-
-  // 核心檢查：如果有改東西但沒寫原因
-  if (changeLogs.length > 0) {
-    if (!userReason) {
-      alert("⚠️ 偵測到資料有變動，請在「資料異動備註」輸入更新原因以記錄軌跡。");
+  // --- 3. 行政變動檢查 (adminNote) ---
+  const userAdminReason = document.getElementById('m-adminNote').value.trim();
+  if (adminChangeLogs.length > 0) {
+    if (!userAdminReason) {
+      alert("⚠️ 偵測到行政個資異動，請填寫「本次異動說明」。");
       document.getElementById('m-adminNote').focus();
-      document.getElementById('m-adminNote').style.border = "2px solid var(--shine-red)";
       return;
     }
-
-    // 產生並追加軌跡文字
-    const now = new Date().toLocaleString('zh-TW', { hour12: false });
-    const traceEntry = `\n--- 📅 ${now} (${adminName}) ---\n🔍 變動：${changeLogs.join(', ')}\n📝 原因：${userReason}\n`;
-    updateData['adminNote'] = traceEntry + (originalData.adminNote || "") ;
+    const adminTrace = `--- 📅 ${now} (${adminName}) ---\n🔍 變動：${adminChangeLogs.join(', ')}\n📝 原因：${userAdminReason}\n\n`;
+    updateData['adminNote'] = adminTrace + (originalData.adminNote || "");
   } else {
-    // 沒變動則維持原本紀錄
     updateData['adminNote'] = originalData.adminNote || "";
   }
 
-  // --- 4. 送出資料 ---
+  // --- 4. 財務變動檢查 (payNote) ---
+  // 這裡我們抓取原本就在 m-payNote 裡面的內容
+  let userFinanceReason = document.getElementById('m-payNote').value.trim();
+
+  if (financeChangeLogs.length > 0) {
+    // 如果有改錢，但 m-payNote 跟原本一樣（代表沒寫新原因）
+    const originalPayNote = (originalData.payNote || "").trim();
+    
+    // 檢查使用者是否有在財務備註輸入新內容 (或是目前的內容完全為空)
+    if (userFinanceReason === originalPayNote || userFinanceReason === "") {
+      alert("⚠️ 偵測到金額異動（繳費/退費/應繳調整），請在「財務備註」內輸入原因。");
+      // 切換到財務分頁 (如果你的系統有這個變數)
+      if (typeof currentTab !== 'undefined' && currentTab !== 'finance') {
+          // 這裡可以觸發切換到財務分頁的按鈕點擊，例如：
+          // document.querySelector('[onclick*="finance"]').click();
+      }
+      document.getElementById('m-payNote').focus();
+      return;
+    }
+
+    // 自動產生變動軌跡紀錄，並把使用者的原因接在後面
+    const financeTrace = `[${now} ${adminName} 調整：${financeChangeLogs.join('; ')}] `;
+    updateData['payNote'] = financeTrace + userFinanceReason;
+  }
+
+  // 數值強制轉型
+  updateData['totalDue'] = Number(updateData['totalDue'] || 0);
+  updateData['paid'] = Number(updateData['paid'] || 0);
+  updateData['subsidy'] = Number(updateData['subsidy'] || 0);
+
+  // --- 5. 送出 API ---
   const res = await api({ 
     action: 'updateParticipant', 
     token: sessionStorage.getItem('admin_token'), 
@@ -1261,8 +1223,7 @@ function changePage(step) {
   });
 
   if (res && res.success) { 
-    alert("✅ 資料已同步並記錄異動軌跡！"); 
-    isModalDirty = false; 
+    alert("✅ 資料更新成功！"); 
     closeModal(); 
     fetchData(); 
   }
