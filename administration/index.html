@@ -653,7 +653,7 @@
   </div>
 
   <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwOylaunhUfkTLUygJqXj0En1qGwXBXg66c2Qk21Yb8KhwR3ybJvQ2GAbYegiZt1xc/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbz3Y29PUsDHuPIkR1GxSmAu_k8STC8M16FPOp1tYaqNzVFS-qB79K_R4s4LR4eb_ZEG/exec";
     let fullData = [];
     let currentTab = 'edit';
     let searchTimer;
@@ -1044,7 +1044,7 @@ function changePage(delta) {
   if (historyEl) {
     // 將舊紀錄填入歷史區
     historyEl.innerText = m.adminNote || "尚未有異動紀錄";
-    // 捲軸自動置底
+    // 捲軸自動置頂
     historyEl.scrollTop = 0;
   }
 
@@ -1240,14 +1240,7 @@ function changePage(delta) {
     // --- 統計 ---
     async function refreshStats() {
   // 1. 取得主要容器 (通常是列表與統計共用的那個)
-  const mainContainer = document.getElementById('section-list'); 
   const statsContainer = document.getElementById('stats-container'); // 或是你專屬的統計容器
-
-  // 2. 清空主要容器，避免統計表格長在列表下方
-  if (mainContainer) {
-      mainContainer.innerHTML = ""; 
-      mainContainer.classList.remove('finance-mode'); // 移除財務模式樣式
-  }
 
   // 3. 顯示讀取中狀態
   if (statsContainer) {
