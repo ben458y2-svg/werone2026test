@@ -1303,26 +1303,49 @@ function changePage(delta) {
     function createTableHtml(channels, categoryData) {
   let html = `<table class="stats-table"><thead><tr><th>類別</th>`;
   
-  // 標題列：各個報名管道
-  channels.forEach(ch => { html += `<th>${ch}</th>`; });
+  // 1. 初始化每一欄的加總物件
+  const colTotals = {};
+  channels.forEach(ch => { 
+    html += `<th>${ch}</th>`; 
+    colTotals[ch] = 0; // 預設 0
+  });
   html += `<th>小計</th></tr></thead><tbody>`;
 
-  // 資料列：各個數值 (例如：男、女)
+  let grandTotal = 0; // 全表總計
+
+  // 2. 資料列渲染
   Object.keys(categoryData).forEach(val => {
     html += `<tr><td><strong>${val}</strong></td>`;
     let rowTotal = 0;
+    
     channels.forEach(ch => {
       const count = categoryData[val][ch] || 0;
       html += `<td>${count}</td>`;
+      
+      // 累加資料
       rowTotal += count;
+      colTotals[ch] += count; // 累加縱向總計
     });
-    html += `<td>${rowTotal}</td></tr>`;
+    
+    html += `<td style="background: #f0f0f0;"><strong>${rowTotal}</strong></td></tr>`;
+    grandTotal += rowTotal;
   });
 
-  html += `</tbody></table>`;
+  html += `</tbody>`;
+
+  // 3. 新增：表格最下方的「總計列」
+  html += `<tfoot style="border-top: 2px solid #000; background: var(--shine-lime, #ccff00);">`;
+  html += `<tr><td><strong>總計</strong></td>`;
+  
+  channels.forEach(ch => {
+    html += `<td><strong>${colTotals[ch]}</strong></td>`;
+  });
+  
+  html += `<td><strong>${grandTotal}</strong></td></tr></tfoot>`;
+  html += `</table>`;
+  
   return html;
 }
-
     // --- 工具函式 ---
     function formatPhone(obj) {
       let val = obj.value.replace(/\D/g, '');
