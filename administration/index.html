@@ -865,7 +865,7 @@
           const statusText = isComplete ? '已繳清' : `待繳 $${balance}`;
 
           return `
-            <div class="item-card" onclick="openAction(${m.row})" style="display: flex; flex-direction: column; min-height: 160px;">
+            <div class="item-card" onclick="openAction(${m.row})" style="display: flex; flex-direction: column; min-height: 140px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <strong style="font-size: 1.15em;">${m.name}</strong>
                 <span class="badge ${statusClass}" style="font-size: 11px; padding: 2px 8px;">${statusText}</span>
@@ -877,7 +877,7 @@
               </div>
 
               <div style="margin-top: 12px; border-top: 1px dashed var(--shine-gray); padding-top: 8px;">
-                <div class="window-label" style="display: block; width: 100%; text-align: center; background: #f9f9f9; color: #777;">
+                <div class="window-label" style="display: block; text-align: center; background: #f9f9f9; color: #777;">
                   👤 窗口：${m.contactName || '個人'}
                 </div>
               </div>
