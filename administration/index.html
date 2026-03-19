@@ -736,7 +736,10 @@
     }
 
     function filterAndRender() {
-      currentPage = 1; // 每次搜尋都回到第一頁
+      // 只有在非翻頁（即：重新輸入搜尋文字）時，才重置回第一頁
+    if (!isPaging) {
+    currentPage = 1;
+      }
       const searchTerm = (document.getElementById('list-search')?.value || '').toLowerCase();
       const filtered = fullData.filter(m =>
         m.name.toLowerCase().includes(searchTerm) ||
@@ -908,18 +911,27 @@
       }
     }
 
-    function changePage(step) {
-    currentPage += step;
-    // 重新呼叫渲染，這裏建議傳入你存放原始資料的全域變數 (例如 globalData 或 allMemberData)
-    // 如果你有搜尋過濾，請呼叫 filterAndRender()
-    if (typeof filterAndRender === "function") {
-    filterAndRender(); 
-    } else {
-    renderList(Data);
-    }
-    // 切換頁面後自動捲回頂部
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    // 這裡加上 isPaging 參數，預設值為 false
+function filterAndRender(isPaging = false) {
+  
+  // 關鍵邏輯：只有在「不是翻頁」的情況下（即使用者輸入新關鍵字），才重置頁碼
+  if (isPaging !== true) {
+    currentPage = 1; 
+  }
+
+  // --- 以下是你原本的過濾邏輯 ---
+  const searchTerm = document.getElementById('list-search')?.value.toLowerCase() || "";
+  
+  // 使用 fullData 進行過濾
+  const filtered = fullData.filter(m => 
+    m.name.toLowerCase().includes(searchTerm) || 
+    (m.church && m.church.toLowerCase().includes(searchTerm)) ||
+    (m.contactName && m.contactName.toLowerCase().includes(searchTerm))
+  );
+
+  // 最後把過濾後的結果丟給 renderList
+  renderList(filtered);
+}
     
     // --- 小計 HTML ---
     function renderGroupSummaryHtml(name, due, paid, sub, idx) {
