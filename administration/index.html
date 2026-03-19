@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WE R ONE 2026 報名行政管理後台</title>
   <style>
-    /* --- 核心品牌色彩與字體 --- */
     :root {
       --shine-lime: #00ff7f; --shine-black: #1a1a1a;
       --shine-bg: #ffffff; --shine-light: #f4f7f5;
@@ -22,67 +21,76 @@
       position: relative;
     }
 
-    .form-section { border: 2px solid var(--shine-black); padding: 20px; background: var(--shine-light); margin-bottom: 30px; }
-
-    .section-title { 
-      display: inline-block; background: var(--shine-black); color: var(--shine-lime); 
-      padding: 5px 20px; font-weight: 900; font-size: 1.1em; margin-bottom: 20px; 
-      margin-top: -35px; border: 2px solid var(--shine-black); box-shadow: 4px 4px 0px var(--shine-lime);
+    /* --- 分頁切換區 (對齊團報樣式) --- */
+    .main-tabs { 
+      display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; 
     }
-
-    .main-tabs { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
     .tab-btn { 
-      flex: 1; min-width: 120px; padding: 15px; font-weight: 900; border: 3px solid var(--shine-black); 
-      cursor: pointer; background: white; color: var(--shine-black); transition: 0.1s;
+      flex: 1; min-width: 120px; padding: 15px; font-weight: 900; 
+      border: 2px solid var(--shine-black); cursor: pointer; 
+      background: var(--shine-bg); color: var(--shine-black); 
+      transition: all 0.1s ease; text-transform: uppercase;
+      display: inline-flex; align-items: center; justify-content: center;
     }
-    .tab-btn.active { background: var(--shine-black); color: var(--shine-lime); box-shadow: 4px 4px 0px var(--shine-lime); transform: translate(-2px, -2px); }
-
-    .btn { 
-      padding: 12px 25px; font-weight: 900; border: 2px solid var(--shine-black); 
-      cursor: pointer; display: inline-flex; align-items: center; justify-content: center; 
-      text-transform: uppercase; text-decoration: none; transition: 0.1s;
-      background: white; color: var(--shine-black);
+    /* 套用團報 .btn-next:hover & .active 邏輯 */
+    .tab-btn:hover, .tab-btn.active { 
+      background: var(--shine-black); 
+      color: var(--shine-lime); 
+      box-shadow: 6px 6px 0px var(--shine-black); 
+      transform: translate(-3px, -3px); 
     }
-    .btn-next { background: var(--shine-black); color: var(--shine-lime); }
-    .btn-batch { background: var(--shine-yellow); color: black; display: none; margin-bottom: 10px; }
 
-    input, select, textarea { border: 2px solid var(--shine-black); padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-top: 5px; }
-    label { font-weight: 900; background: var(--shine-lime); padding: 2px 10px; display: inline-block; cursor: pointer; }
+    /* --- 核心清單佈局控制 --- */
+    #section-list {
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px; width: 100%;
+    }
+    #section-list.finance-mode { display: block !important; }
 
-    .grid-display-area { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; align-content: start; }
-    .item-card { background: var(--shine-bg); border: 3px solid var(--shine-black); padding: 15px; cursor: pointer; transition: all 0.1s ease; position: relative; }
+    /* --- 資料編修卡片 --- */
+    .item-card { 
+      background: var(--shine-bg); border: 3px solid var(--shine-black); 
+      padding: 15px; cursor: pointer; transition: all 0.1s ease; 
+      display: flex; flex-direction: column; justify-content: space-between;
+      min-height: 150px;
+    }
     .item-card:hover { transform: translate(-4px, -4px); box-shadow: 8px 8px 0px var(--shine-black); }
     
-    /* 統計表格樣式 */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 24px; }
-    .stats-card { background: white; border: 3px solid #000; padding: 18px; box-shadow: 6px 6px 0px #000; margin-bottom: 20px;}
-    .stats-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
-    .stats-table th, .stats-table td { border: 1px solid #ddd; padding: 10px 8px; text-align: center; }
-    .stats-table th { background-color: #f8f9fa; }
-    .total-cell { background-color: #fff9c4 !important; font-weight: bold; }
-    .row-label { text-align: left !important; background: #fdfdfd; font-weight: bold; }
+    .window-label {
+      font-size: 12px; color: #333; background: var(--shine-lime);
+      padding: 2px 8px; border: 1px solid #000; margin-top: 10px;
+      display: inline-block; font-weight: 700;
+    }
 
-    .hidden { display: none !important; }
-    .form-group { margin-bottom: 15px; }
-    .grid-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
-    .loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; font-weight: 900; }
-
-    /* 財務專用表格樣式 */
+    /* --- 財務專用表格樣式 --- */
     .finance-table { width: 100%; border-collapse: collapse; background: white; border: 3px solid var(--shine-black); }
     .finance-table th { background: var(--shine-black); color: var(--shine-lime); padding: 12px; text-align: left; }
-    .finance-table td { border: 1px solid var(--shine-gray); padding: 10px; font-size: 14px; }
-    .finance-table tr:hover { background: #fffde7; cursor: pointer; }
-    .group-header { background: #e3f2fd !important; font-weight: 900; border-bottom: 2px solid var(--shine-black) !important; }
+    .finance-table td { border: 1px solid var(--shine-gray); padding: 12px; font-size: 14px; }
+    .finance-table tr:hover:not(.group-header):not(.table-summary-row) { background: #fffde7; cursor: pointer; }
+    
+    .group-header { background: #e3f2fd !important; font-weight: 900; border-bottom: 2px solid var(--shine-black) !important; color: var(--shine-blue); }
+    .table-summary-row { background-color: #fafafa !important; font-weight: bold; border-top: 2px solid var(--shine-black); border-bottom: 3px solid var(--shine-black); }
 
-    /* 狀態標籤 */
+    /* --- 動作按鈕 --- */
+    .btn-save-action {
+      width: 100%; background: var(--shine-red) !important; color: white !important;
+      border: 2px solid var(--shine-black); box-shadow: 6px 6px 0px var(--shine-black);
+      font-size: 1.2em; font-weight: 900; padding: 15px; cursor: pointer;
+      transition: all 0.1s ease;
+    }
+    .btn-save-action:active { transform: translate(2px, 2px); box-shadow: 4px 4px 0px var(--shine-black); }
+
+    .btn-batch { background: var(--shine-yellow); color: black; border: 2px solid #000; font-weight: 900; padding: 10px 20px; cursor: pointer; margin-bottom: 10px; }
+    
+    .balance-red { color: var(--shine-red); font-weight: 900; }
+    .balance-green { color: #2e7d32; font-weight: 900; }
     .badge { padding: 4px 8px; font-weight: 900; font-size: 12px; border: 1px solid black; }
     .bg-red { background: var(--shine-red); color: white; }
     .bg-green { background: var(--shine-lime); color: black; }
     .bg-yellow { background: var(--shine-yellow); color: black; }
-
-    /* 批次匯總資訊卡 */
-    #batch-summary-info { background: #fff9c4; padding: 15px; border: 3px dashed #000; margin-bottom: 20px; font-weight: 900; }
-  </style>
+    .hidden { display: none !important; }
+</style>
 </head>
 <body>
 
@@ -302,35 +310,70 @@
       }, 200);
     }
 
+
+    // --- 5. 排序邏輯：個人報名最前，團體按窗口聚集 ---
+    function sortData(data) {
+      return data.sort((a, b) => {
+        // a 為個人報名 (group 為空)，b 為團體 -> a 前移
+        if (!a.group && b.group) return -1;
+        if (a.group && !b.group) return 1;
+        // 皆為團體時，按 group 名稱排序 (窗口聚集)
+        if (a.group !== b.group) return (a.group || "").localeCompare(b.group || "");
+        // 同一窗口內按姓名排
+        return a.name.localeCompare(b.name);
+      });
+    }
+    
     // --- 渲染清單 (分組邏輯) ---
+    // --- 渲染清單 (包含模式判斷與 1, 2, 3, 4, 5 項修正) ---
     function renderList(data) {
       const container = document.getElementById('section-list');
-      
-      if (currentTab === 'finance') {
-        // 先排序：確保同團體排在一起
-        data.sort((a, b) => (a.group || "個人報名").localeCompare(b.group || "個人報名"));
+      const sorted = sortData(data); // 執行第 5 項排序修正
 
+      if (currentTab === 'finance') {
+        container.classList.add('finance-mode'); // 解決 CSS 佈局問題
+        
         let html = `
           <table class="finance-table">
             <thead>
               <tr>
                 <th style="width:40px;"><input type="checkbox" onchange="selectAll(this)"></th>
-                <th>姓名 / 窗口資訊</th>
-                <th>狀態</th>
-                <th>應收/已繳</th>
-                <th>餘額</th>
+                <th>姓名 / 教會</th>
+                <th>狀態 / 備註</th>
+                <th>應收 / 補助 / 已繳</th>
+                <th>待繳餘額</th>
               </tr>
             </thead>
             <tbody>`;
         
         let lastGroup = null;
-        data.forEach(m => {
+        let groupTotalDue = 0, groupTotalPaid = 0, groupTotalSubsidy = 0;
+        let groupRows = [];
+
+        // 輔助函式：渲染團體總計列
+        const renderSummary = (due, paid, sub) => `
+          <tr class="table-summary-row">
+            <td colspan="3" style="text-align:right;">📦 本次對帳總計：</td>
+            <td>$${due} / $${sub} / <span style="color:blue;">$${paid}</span></td>
+            <td class="${(due-paid-sub) > 0 ? 'balance-red' : 'balance-green'}">$${due - paid - sub}</td>
+          </tr>`;
+
+        sorted.forEach((m, index) => {
           const currentGroup = m.group || "個人報名";
+          const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
+
+          // 偵測到新組別，且不是第一筆，渲染上一組的總計
+          if (lastGroup !== null && currentGroup !== lastGroup && lastGroup !== "個人報名") {
+            html += renderSummary(groupTotalDue, groupTotalPaid, groupTotalSubsidy);
+            groupTotalDue = 0; groupTotalPaid = 0; groupTotalSubsidy = 0;
+          }
+
+          // 渲染組別標頭
           if (currentGroup !== lastGroup) {
             const isIndividual = currentGroup === "個人報名";
             html += `
               <tr class="group-header">
-                <td colspan="5" style="padding:10px;">
+                <td colspan="5" style="padding:10px; background:#e3f2fd;">
                   ${isIndividual ? '📍 個人報名' : '📦 團體：' + currentGroup}
                   ${!isIndividual ? `<span style="margin-left:15px; font-size:12px; font-weight:normal; color:#444;">👤 窗口：${m.contactName || '未填'} | 📱 ${m.contactPhone || '-'}</span>` : ''}
                 </td>
@@ -338,36 +381,58 @@
             lastGroup = currentGroup;
           }
 
-          const balance = (m.totalDue || 0) - (m.paid || 0) - (m.subsidy || 0);
+          // 累加團體統計
+          if (currentGroup !== "個人報名") {
+            groupTotalDue += Number(m.totalDue || 0);
+            groupTotalPaid += Number(m.paid || 0);
+            groupTotalSubsidy += Number(m.subsidy || 0);
+          }
+
           html += `
             <tr onclick="openAction(${m.row})">
               <td onclick="event.stopPropagation()"><input type="checkbox" class="row-checkbox" value="${m.row}" onchange="updateBatchUI()"></td>
-              <td style="padding-left:20px;"><strong>${m.name}</strong><br><small>${m.church || ''}</small></td>
-              <td><span class="badge ${balance <= 0 ? 'bg-green' : (m.paid > 0 ? 'bg-yellow' : 'bg-red')}">${m.status}</span></td>
-              <td>${m.totalDue} / <span style="color:blue;">${m.paid}</span></td>
-              <td style="color:${balance > 0 ? 'red' : 'green'}; font-weight:900;">${balance}</td>
+              <td><strong>${m.name}</strong><br><small>${m.church || ''}</small></td>
+              <td>
+                <span class="badge ${balance <= 0 ? 'bg-green' : (m.paid > 0 ? 'bg-yellow' : 'bg-red')}">${m.status}</span>
+                <div style="font-size:11px; color:#666; margin-top:4px;">📝 ${m.payNote || '無備註'}</div>
+              </td>
+              <td>${m.totalDue} / ${m.subsidy} / <span style="color:blue;">${m.paid}</span></td>
+              <td class="${balance > 0 ? 'balance-red' : 'balance-green'}">$${balance}</td>
             </tr>`;
+            
+          // 最後一筆處理
+          if (index === sorted.length - 1 && currentGroup !== "個人報名") {
+            html += renderSummary(groupTotalDue, groupTotalPaid, groupTotalSubsidy);
+          }
         });
+
         html += `</tbody></table>`;
         container.innerHTML = html;
-        container.style.display = 'block';
       } else {
-        container.innerHTML = data.map(m => `
+        // --- 資料編修模式 (第 2 項修正：移除標籤，改顯示窗口) ---
+        container.classList.remove('finance-mode');
+        container.innerHTML = sorted.map(m => `
           <div class="item-card" onclick="openAction(${m.row})">
-            <div style="display:flex; justify-content:space-between;">
-              <strong>${m.name}</strong>
-              <span class="badge bg-green">${m.role}</span>
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <strong style="font-size:1.1em;">${m.name}</strong>
+                <span style="font-size:12px; color:#666;">#${m.row}</span>
+              </div>
+              <div style="font-size:13px; margin-top:8px;">
+                <div>⛪ ${m.church || '未填教會'}</div>
+                <div style="color:#666;">📱 ${m.phone}</div>
+                <div class="window-label">👤 窗口：${m.contactName || (m.group ? m.group : '個人')}</div>
+              </div>
             </div>
-            <div style="font-size:13px; margin-top:8px;">
-              <div>${m.church || '未填教會'}</div>
-              <div style="color:#666;">${m.phone}</div>
-              ${m.group ? `<div style="color:var(--shine-blue); font-weight:900; margin-top:4px;">📦 ${m.group}</div>` : ''}
+            <div style="border-top: 1px solid #eee; margin-top:10px; padding-top:8px; font-size:12px; text-align:right;">
+               <span class="${(m.totalDue - m.paid - m.subsidy) > 0 ? 'balance-red' : 'balance-green'}">
+                 餘額：$${m.totalDue - m.paid - m.subsidy}
+               </span>
             </div>
           </div>
         `).join('');
       }
     }
-
     // --- 批次功能 ---
     function updateBatchUI() {
       const selected = document.querySelectorAll('.row-checkbox:checked');
