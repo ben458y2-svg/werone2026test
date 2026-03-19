@@ -660,6 +660,7 @@
     let isModalDirty = false;
     let batchSelectedRows = [];
     let currentDisplayData = [];
+    let currentFilteredData = []; // 👈 新增：存放目前過濾後的結果
     let currentPage = 1;
     const pageSize = 20; // 每頁顯示 20 張
     let originalData = {};
@@ -719,32 +720,33 @@
       if (isStats) refreshStats(); else handleSearch();
     }
 
-    // --- 搜尋 ---
-    function handleSearch() {
+    // --- 統一搜尋處理 ---
+function handleSearch() {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
-    // 1. 取得搜尋關鍵字
-    const key = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+    // 1. 自動偵測目前的搜尋輸入框 (相容 list-search 或 search-input)
+    const searchInput = document.getElementById('search-input') || document.getElementById('list-search');
+    const key = (searchInput?.value || '').toLowerCase().trim();
     
-    // 2. 關鍵：搜尋時務必重置頁碼回到第一頁
+    // 2. 搜尋時務必重置頁碼回到第一頁
     currentPage = 1;
 
-    // 3. 執行多欄位過濾
-    let filtered = fullData.filter(m => {
-      if (!key) return true; // 若無關鍵字則顯示全部
-      
+    // 3. 執行過濾並存入全域變數 currentFilteredData
+    currentFilteredData = fullData.filter(m => {
+      if (!key) return true;
       return (m.name && m.name.toLowerCase().includes(key)) ||
-             (m.phone && m.phone.includes(key)) || // 手機號碼
+             (m.phone && m.phone.includes(key)) ||
              (m.church && m.church.toLowerCase().includes(key)) ||
-             (m.contactName && m.contactName.toLowerCase().includes(key)); // 窗口姓名
+             (m.contactName && m.contactName.toLowerCase().includes(key));
     });
 
-    // 4. 更新統計數字並重新渲染
+    // 4. 更新 UI 統計數字
     const statsEl = document.getElementById('stats-count');
-    if (statsEl) statsEl.innerText = `${filtered.length} 筆`;
+    if (statsEl) statsEl.innerText = `${currentFilteredData.length} 筆`;
     
-    renderList(filtered);
-  }, 250); // 稍微增加延遲，對 1000 筆資料更友善
+    // 5. 渲染列表
+    renderList(currentFilteredData);
+  }, 250);
 }
 
     // --- 排序 ---
@@ -776,7 +778,7 @@
         // --- 關鍵修正：補上表格外殼，否則 tbody 會是 null ---
     container.innerHTML = `
       <div class="finance-table-wrapper" style="width:100%; overflow-x:auto; background:white; border:2px solid var(--shine-black); border-radius:8px;">
-        <table class="shine-table" style="width:100%; border-collapse:collapse;">
+        <table class="finance-table" style="width:100%; border-collapse:collapse;">
           <thead>
             <tr style="background:var(--shine-black); color:white;">
               <th style="width:40px; padding:12px;">選</th>
@@ -920,40 +922,24 @@
       }
     }
 
-    /**
- * 統一的過濾與渲染中控
- * @param {boolean} isPaging - 是否為翻頁觸發（預設為 false，即重新搜尋）
- */
+    // 原本的 filterAndRender 可以大幅簡化，或者直接被 renderList 取代
 function filterAndRender(isPaging = false) {
-  // 1. 只有在「不是翻頁」的情況下（即：手動輸入關鍵字時），才重置回第一頁
   if (isPaging !== true) {
-    currentPage = 1; 
+    currentPage = 1;
+    // 如果不是翻頁，就重新走一次搜尋邏輯來更新 currentFilteredData
+    handleSearch(); 
+    return;
   }
-
-  // 2. 獲取搜尋關鍵字
-  const searchInput = document.getElementById('list-search');
-  const searchTerm = (searchInput?.value || "").toLowerCase();
   
-  // 3. 從 fullData 進行過濾
-  const filtered = fullData.filter(m => 
-    (m.name || "").toLowerCase().includes(searchTerm) || 
-    (m.church || "").toLowerCase().includes(searchTerm) || 
-    (m.contactName || "").toLowerCase().includes(searchTerm)
-  );
-
-  // 4. 丟給 renderList 進行排序、裁切與顯示
-  renderList(filtered);
+  // 如果是翻頁，直接用已經過濾好的資料進行渲染
+  renderList(currentFilteredData);
 }
 
- // 翻頁專用函式
-function changePage(step) {
-  currentPage += step;
-  
-  // 呼叫過濾函式，並傳入 true 告訴它不要重置頁碼
-  filterAndRender(true); 
-
-  // 自動捲回頂部提升體驗
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+// 修改你的 changePage 函式（範例）
+function changePage(delta) {
+  currentPage += delta;
+  // 直接渲染目前過濾後的資料，這就不會弄丟搜尋關鍵字了
+  renderList(currentFilteredData); 
 }
     
     // --- 小計 HTML ---
@@ -1037,7 +1023,6 @@ function changePage(step) {
           例如填寫 1500，這 ${batchSelectedRows.length} 人每個人都會被記錄已繳 1500。
         </div>`;
 
-      document.getElementById('m-status').value = "已繳全額";
       document.getElementById('m-paid').value = "";
       document.getElementById('m-payNote').value = "團體批次繳費";
       document.getElementById('m-receiver').value = sessionStorage.getItem('admin_name') || "";
