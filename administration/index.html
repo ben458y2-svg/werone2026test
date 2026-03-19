@@ -1451,28 +1451,41 @@
     // FIX #5: use classList only, no inline style fighting
     // =========================================
     async function refreshStats() {
-      const statsContainer = document.getElementById('stats-container');
-      if (!statsContainer) return;
+  // 1. 同時抓取統計容器與列表容器
+  const statsContainer = document.getElementById('stats-container');
+  const listContainer = document.getElementById('section-list');
+  
+  if (!statsContainer) return;
 
-      statsContainer.innerHTML = `
-        <div class="stats-card" style="grid-column:1/-1; text-align:center; padding:40px;">
-          ⏳ 正在分析報名數據...
-        </div>`;
+  // 2. 【關鍵修正】強制顯隱：開啟統計、隱藏列表
+  // 使用 classList 避免 style.display 的行內樣式衝突
+  statsContainer.classList.remove('hidden');
+  if (listContainer) {
+    listContainer.classList.add('hidden');
+  }
 
-      try {
-        const res = await api({
-          action: 'getRegistrationStats',
-          token:  sessionStorage.getItem('admin_token')
-        });
-        if (res && res.success && res.data) {
-          renderStatsDashboard(res.data);
-        } else {
-          statsContainer.innerHTML = `<div class="stats-card" style="grid-column:1/-1;">❌ 無法載入統計資料：${res?.message || '未知錯誤'}</div>`;
-        }
-      } catch(err) {
-        statsContainer.innerHTML = `<div class="stats-card" style="grid-column:1/-1;">⚠️ 系統錯誤，請檢查網路連線</div>`;
-      }
+  // 3. 顯示讀取中狀態
+  statsContainer.innerHTML = `
+    <div class="stats-card" style="grid-column:1/-1; text-align:center; padding:40px;">
+      <div class="spinner"></div> ⏳ 正在分析報名數據...
+    </div>`;
+
+  try {
+    const res = await api({
+      action: 'getRegistrationStats',
+      token: sessionStorage.getItem('admin_token')
+    });
+
+    if (res && res.success && res.data) {
+      // 4. 渲染儀表板
+      renderStatsDashboard(res.data);
+    } else {
+      statsContainer.innerHTML = `<div class="stats-card" style="grid-column:1/-1;">❌ 無法載入統計資料：${res?.message || '未知錯誤'}</div>`;
     }
+  } catch(err) {
+    statsContainer.innerHTML = `<div class="stats-card" style="grid-column:1/-1;">⚠️ 系統錯誤，請檢查網路連線</div>`;
+  }
+}
 
     function renderStatsDashboard(data) {
       const container = document.getElementById('stats-container');
