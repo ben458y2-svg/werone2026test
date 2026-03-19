@@ -827,6 +827,25 @@ function handleAdminSearch() {
     renderFinanceModule(currentFilteredData);
   }, 250);
 }
+
+    function updateWindowFilterOptions() {
+  const select = document.getElementById('window-filter-select');
+  if (!select) return;
+
+  // 1. 從全域資料中抓取所有不重複的窗口名稱
+  const windows = [...new Set(fullData.map(m => (m.contactName || "").trim() || "個人報名"))].sort();
+
+  // 2. 產生選項 HTML
+  let optionsHtml = '<option value="all">📁 所有窗口</option>';
+  windows.forEach(w => {
+    // 嘗試找尋該窗口的電話
+    const contactInfo = fullData.find(m => ((m.contactName || "").trim() || "個人報名") === w);
+    const phoneSuffix = (w !== "個人報名" && contactInfo?.contactPhone) ? ` (${contactInfo.contactPhone})` : "";
+    optionsHtml += `<option value="${w}">${w}${phoneSuffix}</option>`;
+  });
+
+  select.innerHTML = optionsHtml;
+}
     // --- 排序 ---
     function sortData(data) {
       return [...data].sort((a, b) => {
