@@ -667,7 +667,7 @@
     </div>
   </div>
 
-  <script>
+ <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzg1fKfYMFAy_UjLfp5X8kZgpOpXDMLa1lnp8FpAIHzu4S9xbgmUQCRmMTWjnPyzVoD/exec";
 
     let fullData = [];
@@ -1322,7 +1322,8 @@
                                    'grade','church','isChristian','isBaptized','iceName','iceRel',
                                    'icePhone','isAttended','dietary','medical','status'];
 
-      const updateData = { ...originalData };
+      // KEY FIX: seed with full original row so no fields are wiped
+      const updateData    = { ...originalData };
       let adminChangeLogs = [];
 
       trackedAdminFields.forEach(f => {
@@ -1332,6 +1333,15 @@
         let newVal     = el.value || "";
         let oldVal     = (originalData[f] == null) ? "" : String(originalData[f]).trim();
         let compareNew = String(newVal).trim();
+
+        // BUG2 FIX: normalize birthday to ISO yyyy-mm-dd before comparing
+        // DB may store as yyyy/mm/dd or other locale formats causing false positives
+        if (f === 'birthday' && oldVal) {
+          try {
+            const d = new Date(oldVal);
+            if (!isNaN(d.getTime())) oldVal = d.toISOString().split('T')[0];
+          } catch(dateErr) {}
+        }
 
         // FIX #8: status comparison handles legacy "尚未繳費" values in DB
         if (f === 'status') {
@@ -1346,10 +1356,6 @@
           adminChangeLogs.push(`${label}: [${oldVal || '無'}] ➡️ [${compareNew || '無'}]`);
         }
       });
-        if (f === 'birthday' && oldVal) {
-          const d = new Date(oldVal);
-          if (!isNaN(d.getTime())) oldVal = d.toISOString().split('T')[0];
-      }
 
       const userAdminReason = document.getElementById('m-adminNote').value.trim();
 
@@ -1362,9 +1368,10 @@
         const adminTrace = `--- 📅 ${now} (${adminName}) ---\n🔍 變動：${adminChangeLogs.join(', ')}\n📝 原因：${userAdminReason}\n\n`;
         updateData['adminNote'] = adminTrace + (originalData.adminNote || "");
       } else {
-        // No fields changed → just preserve existing adminNote and save normally
+        // No admin fields changed — preserve existing adminNote and proceed to save
         updateData['adminNote'] = originalData.adminNote || "";
       }
+
 
       await callUpdateAPI(rowId, updateData, adminName);
     }
@@ -1379,7 +1386,8 @@
 
       const trackedFinanceFields = ['paid','subsidy','totalDue','payMethod','receiver'];
 
-      const updateData = { ...originalData };
+      // KEY FIX: seed with full original row so no fields are wiped
+      const updateData      = { ...originalData };
       let financeChangeLogs = [];
 
       trackedFinanceFields.forEach(f => {
@@ -1442,7 +1450,7 @@
         adminName: adminName
       });
       if (res && res.success) {
-        isModalDirty = false;
+        isModalDirty = false; // BUG1 FIX: reset before closeModal to skip dirty warning
         alert("✅ 資料更新成功！");
         closeModal();
         fetchData();
