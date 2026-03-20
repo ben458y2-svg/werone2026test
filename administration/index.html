@@ -1346,6 +1346,10 @@
           adminChangeLogs.push(`${label}: [${oldVal || '無'}] ➡️ [${compareNew || '無'}]`);
         }
       });
+        if (f === 'birthday' && oldVal) {
+          const d = new Date(oldVal);
+          if (!isNaN(d.getTime())) oldVal = d.toISOString().split('T')[0];
+      }
 
       const userAdminReason = document.getElementById('m-adminNote').value.trim();
 
@@ -1439,6 +1443,7 @@
         adminName: adminName
       });
       if (res && res.success) {
+        isModalDirty = false;
         alert("✅ 資料更新成功！");
         closeModal();
         fetchData();
