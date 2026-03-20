@@ -339,7 +339,7 @@
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 15px;
-      align-items: center;
+      align-items: end;
     }
 
     /* Finance search has 3 cols: input | select | count */
@@ -526,7 +526,7 @@
       <!-- 資料編修搜尋列 -->
       <div id="admin-search-group" class="search-group">
         <div>
-          <label for="admin-search" style="padding:0 0 10px;">關鍵字搜尋</label>
+          <label for="admin-search" style="margin:0 0 10px;">關鍵字搜尋</label>
           <input type="text" id="admin-search" placeholder="搜尋姓名、電話、教會、窗口..." oninput="handleAdminSearch()">
         </div>
         <span id="admin-stats-count" class="count-badge">0 筆</span>
@@ -535,8 +535,8 @@
       <!-- 繳費登記搜尋列 (預設隱藏) -->
       <div id="finance-search-group" class="search-group finance-search-layout hidden">
         <div>
-          <label for="finance-search" style="padding:0 0 10px;">關鍵字搜尋</label>
-          <input type="text" id="finance-search" placeholder="搜尋姓名或窗口..." oninput="handleFinanceSearch()">
+          <label for="finance-search" style="margin:0 0 10px;">關鍵字搜尋</label>
+          <input type="text" id="finance-search" placeholder="搜尋姓名、電話、教會、窗口..." oninput="handleFinanceSearch()">
         </div>
         <div>
           <label for="window-filter-select">篩選窗口</label>
