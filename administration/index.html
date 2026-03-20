@@ -537,7 +537,7 @@
           <input type="text" id="finance-search" placeholder="搜尋姓名、電話、教會、窗口..." oninput="handleFinanceSearch()">
         </div>
         <div>
-          <label for="window-filter-select">篩選窗口</label>
+          <label for="window-filter-select" style="margin:0 0 5px;">篩選窗口</label>
           <select id="window-filter-select" onchange="handleFinanceSearch()">
             <option value="all">📁 所有窗口</option>
           </select>
@@ -1362,9 +1362,8 @@
         const adminTrace = `--- 📅 ${now} (${adminName}) ---\n🔍 變動：${adminChangeLogs.join(', ')}\n📝 原因：${userAdminReason}\n\n`;
         updateData['adminNote'] = adminTrace + (originalData.adminNote || "");
       } else {
-        // FIX #12: clearer hint that financial changes need finance tab
-        alert("ℹ️ 未偵測到行政資料異動。\n若要修改繳費資訊，請切換至「💰 繳費登記」分頁後再開啟此成員。");
-        return;
+        // No fields changed → just preserve existing adminNote and save normally
+        updateData['adminNote'] = originalData.adminNote || "";
       }
 
       await callUpdateAPI(rowId, updateData, adminName);
