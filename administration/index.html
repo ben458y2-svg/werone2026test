@@ -1339,8 +1339,11 @@
                                    'grade','church','isChristian','isBaptized','iceName','iceRel',
                                    'icePhone','isAttended','dietary','medical','status'];
 
-      // KEY FIX: seed with full original row so no fields are wiped
-      const updateData    = { ...originalData };
+      // Seed updateData with whitelisted fields from originalData only.
+      // Avoids sending internal fields (batch, group, room, etc.) that may cause backend errors.
+      const _adminWhitelist = ['name', 'gender', 'birthday', 'phone', 'email', 'role', 'school', 'grade', 'church', 'isChristian', 'isBaptized', 'iceName', 'iceRel', 'icePhone', 'isAttended', 'dietary', 'medical', 'status', 'totalDue', 'paid', 'subsidy', 'payMethod', 'receiver', 'payNote', 'adminNote'];
+      const updateData = {};
+      _adminWhitelist.forEach(k => { if (originalData[k] !== undefined) updateData[k] = originalData[k]; });
       let adminChangeLogs = [];
 
       trackedAdminFields.forEach(f => {
@@ -1403,8 +1406,10 @@
 
       const trackedFinanceFields = ['paid','subsidy','totalDue','payMethod','receiver'];
 
-      // KEY FIX: seed with full original row so no fields are wiped
-      const updateData      = { ...originalData };
+      // Seed updateData with whitelisted fields from originalData only.
+      const _financeWhitelist = ['name', 'gender', 'birthday', 'phone', 'email', 'role', 'school', 'grade', 'church', 'isChristian', 'isBaptized', 'iceName', 'iceRel', 'icePhone', 'isAttended', 'dietary', 'medical', 'status', 'totalDue', 'paid', 'subsidy', 'payMethod', 'receiver', 'payNote', 'adminNote'];
+      const updateData = {};
+      _financeWhitelist.forEach(k => { if (originalData[k] !== undefined) updateData[k] = originalData[k]; });
       let financeChangeLogs = [];
 
       trackedFinanceFields.forEach(f => {
