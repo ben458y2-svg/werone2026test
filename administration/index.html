@@ -1322,7 +1322,7 @@
                                    'grade','church','isChristian','isBaptized','iceName','iceRel',
                                    'icePhone','isAttended','dietary','medical','status'];
 
-      const updateData    = {};
+      const updateData = { ...originalData };
       let adminChangeLogs = [];
 
       trackedAdminFields.forEach(f => {
