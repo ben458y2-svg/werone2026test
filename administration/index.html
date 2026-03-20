@@ -641,13 +641,13 @@
 
       <!-- 財務登記模組 -->
       <div class="form-section" id="finance-module" style="background:#e3f2fd; border:3px solid var(--shine-blue);">
-        <div class="section-title finance-section-title">💰 財務繳費登記</div>
+        <div class="section-title finance-section-title">財務繳費登記</div>
         <div class="grid-row">
-          <div class="form-group"><label>應繳金額</label><input type="number" id="m-totalDue"></div>
-          <div class="form-group"><label>已繳金額</label><input type="number" id="m-paid"></div>
-          <div class="form-group"><label>補助金額</label><input type="number" id="m-subsidy"></div>
+          <div class="form-group"><label style="background: var(--shine-blue);">應繳金額</label><input type="number" id="m-totalDue"></div>
+          <div class="form-group"><label style="background: var(--shine-blue);">已繳金額</label><input type="number" id="m-paid"></div>
+          <div class="form-group"><label style="background: var(--shine-blue);">補助金額</label><input type="number" id="m-subsidy"></div>
           <div class="form-group">
-            <label>繳費管道</label>
+            <label style="background: var(--shine-blue);">繳費管道</label>
             <select id="m-payMethod">
               <option value="匯款">匯款</option>
               <option value="現金">現金</option>
@@ -655,14 +655,14 @@
               <option value="其他">其他</option>
             </select>
           </div>
-          <div class="form-group"><label>收款人</label><input type="text" id="m-receiver"></div>
-          <div class="form-group" style="grid-column: 1 / -1;"><label>繳費備註</label><input type="text" id="m-payNote"></div>
+          <div class="form-group"><label style="background: var(--shine-blue);">收款人</label><input type="text" id="m-receiver"></div>
+          <div class="form-group" style="grid-column: 1 / -1;"><label style="background: var(--shine-blue);">繳費備註</label><input type="text" id="m-payNote"></div>
         </div>
       </div>
 
       <!-- FIX #1: Save button now calls submitEdit() router -->
       <div style="text-align:center; margin-top:30px; margin-bottom:40px;">
-        <button class="btn btn-next" style="font-size:1.1em; padding:15px 40px;" onclick="submitEdit()">確認儲存修改</button>
+        <button class="btn btn-next" onclick="submitEdit()">確認儲存修改</button>
       </div>
     </div>
   </div>
