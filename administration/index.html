@@ -1376,7 +1376,7 @@
 
       const trackedFinanceFields = ['paid','subsidy','totalDue','payMethod','receiver'];
 
-      const updateData      = {};
+      const updateData = { ...originalData };
       let financeChangeLogs = [];
 
       trackedFinanceFields.forEach(f => {
