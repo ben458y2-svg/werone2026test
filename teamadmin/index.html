@@ -1605,7 +1605,8 @@ async function saveBatchData(btnElement) {
     // 1. 呼叫 API (後端這時會寫入資料)
     const res = await callApi("batchUpdateDormAndGroups", { 
       updates: updates, 
-      adminName: adminName 
+      adminName: sessionStorage.getItem('adminName'), // 從存儲抓
+      adminPhone: sessionStorage.getItem('adminPhone') // 從存儲抓
     });
 
     // 💡 關鍵：不要再去判斷 if(res.success)，因為 callApi 沒報錯就代表成功
