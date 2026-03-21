@@ -472,7 +472,7 @@
 
 <script>
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxumpSLSfD3N8Fwx8TJXxqGOZbqC9H2MCqLWeHmchQi8bPM-2NhBr1C-nZSO1tjqXcgyQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxBwPbaGReQA9X10to50MFABOKFtbuTvbodNgR35dltIYaHFzSOP-FtKjYQJcmm8Hkh1w/exec';
 
 async function callApi(action, payload) {
   const response = await fetch(API_URL, {
@@ -1004,6 +1004,7 @@ function removeFromRoom(row) {
   // document.getElementById('m-idCard').value = m.idCard || ""; // 已依隱私需求移除
   document.getElementById('m-phone').value = m.phone || "";
   document.getElementById('m-email').value = m.email || "";
+  document.getElementById('m-role').value = m.role || "";
   document.getElementById('m-school').value = m.school || "";
   document.getElementById('m-grade').value = m.grade || "";
   document.getElementById('m-church').value = m.church || "";
