@@ -1541,31 +1541,53 @@
     }
 
     function createTableHtml(channels, categoryData) {
-      const colTotals = {};
-      let html = `<table class="stats-table"><thead><tr><th>類別</th>`;
-      channels.forEach(ch => { html += `<th>${ch}</th>`; colTotals[ch] = 0; });
-      html += `<th>小計</th></tr></thead><tbody>`;
+  const colTotals = {};
+  
+  // --- 步驟 1: 預先計算 grandTotal (為了算出每一行的百分比) ---
+  let grandTotal = 0;
+  Object.values(categoryData).forEach(channelMap => {
+    channels.forEach(ch => {
+      grandTotal += (channelMap[ch] || 0);
+    });
+  });
 
-      let grandTotal = 0;
-      Object.keys(categoryData).sort().forEach(val => {
-        let rowTotal = 0;
-        html += `<tr><td class="row-label"><strong>${val}</strong></td>`;
-        channels.forEach(ch => {
-          const count = categoryData[val][ch] || 0;
-          html += `<td>${count}</td>`;
-          rowTotal += count;
-          colTotals[ch] += count;
-        });
-        html += `<td style="background:#f0f0f0;"><strong>${rowTotal}</strong></td></tr>`;
-        grandTotal += rowTotal;
-      });
+  // --- 步驟 2: 建立表頭 ---
+  let html = `<table class="stats-table"><thead><tr><th>類別</th>`;
+  channels.forEach(ch => { 
+    html += `<th>${ch}</th>`; 
+    colTotals[ch] = 0; 
+  });
+  html += `<th>小計</th><th>占比</th></tr></thead><tbody>`; // 新增占比標頭
 
-      html += `</tbody><tfoot style="border-top:2px solid var(--shine-black); background:var(--shine-lime);">`;
-      html += `<tr><td><strong>總計</strong></td>`;
-      channels.forEach(ch => html += `<td><strong>${colTotals[ch]}</strong></td>`);
-      html += `<td><strong>${grandTotal}</strong></td></tr></tfoot></table>`;
-      return html;
-    }
+  // --- 步驟 3: 建立表格主體 ---
+  Object.keys(categoryData).sort().forEach(val => {
+    let rowTotal = 0;
+    html += `<tr><td class="row-label"><strong>${val}</strong></td>`;
+    
+    channels.forEach(ch => {
+      const count = categoryData[val][ch] || 0;
+      html += `<td>${count}</td>`;
+      rowTotal += count;
+      colTotals[ch] += count;
+    });
+
+    // 計算該列占比 (避免 grandTotal 為 0 的除錯處理)
+    const rowPercentage = grandTotal > 0 ? ((rowTotal / grandTotal) * 100).toFixed(1) : 0;
+
+    html += `<td style="background:#f0f0f0;"><strong>${rowTotal}</strong></td>`;
+    html += `<td style="color:#666;">${rowPercentage}%</td></tr>`; // 新增占比單元格
+  });
+
+  // --- 步驟 4: 建立頁尾總計 ---
+  html += `</tbody><tfoot style="border-top:2px solid var(--shine-black); background:var(--shine-lime);">`;
+  html += `<tr><td><strong>總計</strong></td>`;
+  channels.forEach(ch => html += `<td><strong>${colTotals[ch]}</strong></td>`);
+  html += `<td><strong>${grandTotal}</strong></td>`;
+  html += `<td><strong>100%</strong></td></tr></tfoot></table>`; // 總計占比固定為 100%
+  
+  return html;
+}
+
 
     // =========================================
     // 工具函式
