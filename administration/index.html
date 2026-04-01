@@ -1079,6 +1079,7 @@
         const currentWindow = (m.contactName || "").trim();
         const balance       = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
         const isComplete    = (balance <= 0);
+        const isCancelled = (m.status === '取消報名');
 
         // Group subtotal on window change
         if (lastWindow !== null && currentWindow !== lastWindow && lastWindow !== "") {
@@ -1114,7 +1115,7 @@
             </td>
             <td><strong>${m.name}</strong></td>
             <td>${m.church || ''}</td>
-            <td><span class="badge ${isComplete ? 'bg-green' : 'bg-red'}">${isComplete ? '完成' : '待繳'}</span></td>
+            <td><span class="badge ${isCancelled ? 'bg-gray' : (isComplete ? 'bg-green' : 'bg-red')}">${isCancelled ? '取消' : (isComplete ? '完成' : '待繳')}</span></td>
             <td style="text-align:right;">${m.totalDue || 0}</td>
             <td style="text-align:right;">${m.subsidy || 0}</td>
             <td style="text-align:right; color:var(--shine-blue);">${m.paid || 0}</td>
