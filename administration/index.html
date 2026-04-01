@@ -396,7 +396,7 @@
 
     /* Finance search has 3 cols: input | select | count */
     .search-group.finance-search-layout {
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto auto auto;
     }
 
     .search-group input, .search-group select {
@@ -915,7 +915,7 @@
       const matchWin = (selectedWindow === 'all') || (mWindow === selectedWindow);
 
       // 3. 狀態篩選 (同步卡片渲染邏輯)
-      const balance    = Number(m.balance || 0);
+      const balance    = Number(m.totalDue || 0) - Number(m.paid || 0) - Number(m.subsidy || 0);
       const isCancelled = (m.status === '取消報名');
       const isComplete  = (balance <= 0);
 
