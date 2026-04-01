@@ -311,11 +311,14 @@
     .total-cell { background-color: #fff9c4 !important; font-weight: bold; }
     .row-label { text-align: left !important; background: #fdfdfd; font-weight: bold; }
 
-    /* 摘要數據塊樣式 */
+    /* 摘要數據塊樣式 (平時顯示) */
     .summary-container {display: grid;grid-template-columns: repeat(3, 1fr);gap: 20px;margin-bottom: 24px;}
     .summary-box {background: white;border: 3px solid var(--shine-black);padding: 15px;text-align: center;box-shadow: 4px 4px 0px var(--shine-black);}
     .summary-box .num { font-size: 24px; font-weight: 900; display: block; }
     .summary-box .label { font-size: 14px; color: #666; }
+
+    /* 預設隱藏列印元件 */
+    .print-header, .print-title { display: none; }
 
     /* 列印專用樣式 */
     @media print {
@@ -323,17 +326,21 @@
     #stats-container, #stats-container * { visibility: visible; }
     #stats-container { position: absolute; left: 0; top: 0; width: 100%; }
   
+    /* 確保表格總計 (tfoot) 邏輯 */
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    tfoot { display: table-row-group; } 
+
     .no-print { display: none !important; }
-    .stats-card { box-shadow: none !important; border: 1px solid #000 !important; page-break-inside: avoid; }
+    .stats-card { box-shadow: none !important; border: 1px solid #000 !important; page-break-inside: avoid;  }
   
     /* 強制分頁邏輯 */
     .page-break { page-break-after: always; }
   
-    /* 頁首時間 */
+    /* 顯示列印專用標頭與標題 */
     .print-header {display: block !important;text-align: right;font-size: 12px;margin-bottom: 10px;border-bottom: 1px solid #ccc;}
+    .print-title {display: block !important;text-align: center;font-size: 24px;font-weight: bold;margin-bottom: 5px;}
     }
-    .print-header { display: none; }
-
 
     /* =========================================
        8. 徽章與標籤
@@ -1544,110 +1551,107 @@
   if (!container) return;
   container.innerHTML = '';
 
-  // 1. 產生列印用的頁首 (包含日期時間)
   const now = new Date();
   const timeStr = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
-  const printHeader = `<div class="print-header">報名統計報表 | 輸出時間：${timeStr}</div>`;
   
-  // 2. 產生摘要數據區塊 (Summary)
-  const summaryHtml = `
+  // 這裡可以自定義您的報表標題
+  const reportTitle = “WE R ONE 2026報名現況統計報表";
+
+  container.innerHTML = `
+    <div class="print-header">輸出時間：${timeStr}</div>
+    <div class="print-title">${reportTitle}</div>
+    
     <div class="summary-container">
       <div class="summary-box"><span class="label">總筆數</span><span class="num">${data.summary.total}</span></div>
       <div class="summary-box" style="color: #d9534f;"><span class="label">取消報名</span><span class="num">${data.summary.cancelled}</span></div>
-      <div class="summary-box" style="color: #5cb85c;"><span class="label">實際報名</span><span class="num">${data.summary.active}</span></div>
+      <div class="summary-box" style="color: #2e7d32;"><span class="label">實際報名</span><span class="num">${data.summary.active}</span></div>
     </div>
+    
+    <div id="page-1-content" class="stats-grid"></div>
+    <div class="page-break"></div>
+    <div id="page-2-content" class="stats-grid" style="margin-top:20px;"></div>
   `;
 
-  // 3. 定義兩頁的配置
-  const page1Configs = [
-    { title: "👫 性別 × 報名管道", key: "gender" },
-    { title: "🎓 報名身分 × 報名管道", key: "role" },
-    { title: "✝️ 基督徒 × 報名管道", key: "isChristian" },
-    { title: "💧 是否受洗 × 報名管道", key: "isBaptized" },
-    { title: "✨ 曾參加 SHINE × 報名管道", key: "isAttended" }
+  const p1Container = document.getElementById('page-1-content');
+  const p2Container = document.getElementById('page-2-content');
+
+  // --- 修正點：統一配置陣列並加入 page 屬性 ---
+  const configs = [
+    { title: "👫 性別 × 報名管道", key: "gender", page: 1 },
+    { title: "🎓 報名身分 × 報名管道", key: "role", page: 1 },
+    { title: "✝️ 基督徒 × 報名管道", key: "isChristian", page: 1 },
+    { title: "💧 是否受洗 × 報名管道", key: "isBaptized", page: 1 },
+    { title: "✨ 曾參加 SHINE × 報名管道", key: "isAttended", page: 1 },
+    { title: "⛪ 所屬教會 × 報名管道", key: "church", page: 2 }
   ];
-  
-  const page2Configs = [
-    { title: "⛪ 所屬教會 × 報名管道", key: "church" }
-  ];
 
-  let fullHtml = printHeader + summaryHtml + '<div class="stats-grid">';
-
-  // 渲染第一頁表格
-  page1Configs.forEach(conf => {
-    fullHtml += buildCardHtml(conf, data);
+  configs.forEach(conf => {
+    const card = document.createElement('div');
+    card.className = 'stats-card';
+    
+    if (data[conf.key] && Object.keys(data[conf.key]).length > 0) {
+      card.innerHTML = `<h3>${conf.title}</h3>` + createTableHtml(data.channels, data[conf.key]);
+    } else {
+      card.innerHTML = `<h3>${conf.title}</h3><p style="color:#888; text-align:center; padding:20px;">暫無數據</p>`;
+    }
+    
+    if (conf.page === 1) p1Container.appendChild(card);
+    else p2Container.appendChild(card);
   });
-  
-  // 插入分頁標記 (僅列印有效)
-  fullHtml += '</div><div class="page-break"></div><div class="stats-grid" style="margin-top:20px;">';
-
-  // 渲染第二頁表格 (教會)
-  page2Configs.forEach(conf => {
-    fullHtml += buildCardHtml(conf, data);
-  });
-
-  fullHtml += '</div>';
-  container.innerHTML = fullHtml;
-}
-
-// 輔助函式：封裝卡片 HTML
-function buildCardHtml(conf, data) {
-  let html = `<div class="stats-card"><h3>${conf.title}</h3>`;
-  if (data[conf.key] && Object.keys(data[conf.key]).length > 0) {
-    html += createTableHtml(data.channels, data[conf.key]);
-  } else {
-    html += `<p style="color:#888; text-align:center; padding:20px;">暫無數據</p>`;
-  }
-  html += `</div>`;
-  return html;
-}
-
-// 列印按鈕執行的 Function
-function printStats() {
-  window.print();
 }
 
 
-// 1. 保留您原本強大的表格產生器 (包含小計與百分比)
+
 function createTableHtml(channels, categoryData) {
   const colTotals = {};
   let grandTotal = 0;
   
-  // 計算總計
+  // --- 新增：自定義排序權重字典 ---
+  // 您可以在這裡定義任何想要優先呈現的文字及其順序（數字越小越前面）
+  const sortWeight = {
+    "是": 1, "否": 2, "有": 1, "無": 2,
+    "男": 1, "女": 2,
+    "學生": 1, "社會青年": 2, "教牧/同工": 3, "家長": 4, "其他": 99,
+    "已受洗": 1, "未受洗": 2,
+    "第一次參加": 1, "曾參加過": 2, "未填": 100
+  };
+
+  // 取得所有類別並進行自定義排序
+  const sortedKeys = Object.keys(categoryData).sort((a, b) => {
+    const weightA = sortWeight[a] || 50; // 若不在字典內，預設權重為 50
+    const weightB = sortWeight[b] || 50;
+    
+    if (weightA !== weightB) {
+      return weightA - weightB; // 依權重排序
+    }
+    return a.localeCompare(b, 'zh-Hant'); // 權重相同則按筆畫排序
+  });
+
+  // --- 後續計算總計與建立表格的邏輯不變 ---
   Object.values(categoryData).forEach(channelMap => {
     channels.forEach(ch => { grandTotal += (channelMap[ch] || 0); });
   });
 
-
-
-
-  // 建立表頭
   let html = `<table class="stats-table"><thead><tr><th>類別</th>`;
-  channels.forEach(ch => { 
-    html += `<th>${ch}</th>`; 
-    colTotals[ch] = 0; 
-  });
+  channels.forEach(ch => { html += `<th>${ch}</th>`; colTotals[ch] = 0; });
   html += `<th>小計</th><th>占比</th></tr></thead><tbody>`;
 
-  // 建立內容
-  Object.keys(categoryData).sort().forEach(val => {
+  // 使用我們排序過的 sortedKeys
+  sortedKeys.forEach(val => {
     let rowTotal = 0;
     html += `<tr><td class="row-label"><strong>${val}</strong></td>`;
-    
-channels.forEach(ch => {
+    channels.forEach(ch => {
       const count = categoryData[val][ch] || 0;
       html += `<td>${count}</td>`;
       rowTotal += count;
       colTotals[ch] += count;
     });
-
-
     const rowPercentage = grandTotal > 0 ? ((rowTotal / grandTotal) * 100).toFixed(1) : 0;
     html += `<td style="background:#f0f0f0;"><strong>${rowTotal}</strong></td>`;
     html += `<td style="color:#666;">${rowPercentage}%</td></tr>`;
   });
 
-  // 建立頁尾
+  // 頁尾總計邏輯保持不變...
   html += `</tbody><tfoot style="border-top:2px solid var(--shine-black); background:var(--shine-lime);">`;
   html += `<tr><td><strong>總計</strong></td>`;
   channels.forEach(ch => html += `<td><strong>${colTotals[ch]}</strong></td>`);
@@ -1655,6 +1659,7 @@ channels.forEach(ch => {
   
   return html;
 }
+
 
 
     // =========================================
