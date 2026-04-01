@@ -327,7 +327,7 @@
     #stats-container, #stats-container * { visibility: visible; }
     #stats-container { position: absolute; left: 0; top: 0; width: 100%;background: white; }
     /* 2. 第一頁：設定為兩欄佈局 (1fr 1fr) */
-    #page-1-content {display: grid !important;grid-template-columns: 1fr 1fr !important; gap: 15px !important;}
+    #page-1-content {display: grid !important;grid-template-columns: 1fr 1fr !important; gap: 10px !important;}
 
     /* 3. 第二頁 (教會)：設定為單欄滿版 */
     #page-2-content {display: block !important; /* 或是 grid-template-columns: 1fr */
@@ -341,8 +341,21 @@
 
     .no-print { display: none !important; }
     .stats-card {box-shadow: none !important;border: 1px solid #000 !important;margin-bottom: 15px !important;page-break-inside: avoid; /* 防止卡片被切斷 */}
-    .stats-table {font-size: 11px !important; /* 稍微縮小字體以符合兩欄寬度 */}
-  
+    .stats-card h3 {
+    font-size: 14px !important; /* 縮小標題字體 */
+    margin: 0 0 8px 0 !important; /* 移除頂部邊距，縮小底部邊距 */
+    padding-bottom: 4px !important;
+    border-bottom: 2px solid #000 !important;
+    text-align: left;
+    }
+    .stats-table {font-size: 10.5px !important; /* 稍微縮小字體 */line-height: 1.2 !important; /* 緊縮行高 */}
+    .stats-table th, .stats-table td {padding: 4px 2px !important; /* 大幅縮小單元格的上下內邊距 (原本可能是 10px) */
+                                      border: 1px solid #000 !important;}
+
+    .summary-container {gap: 10px !important;margin-bottom: 15px !important;}
+    .summary-box {padding: 8px !important;}
+    .summary-box .num { font-size: 20px !important; }
+    }
     /* 強制分頁邏輯 */
     .page-break { display: block;page-break-after: always; }
   
